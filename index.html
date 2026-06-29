@@ -119,6 +119,11 @@ h1 em{font-style:normal; color:var(--amber)}
 .kv .k{font-size:12.5px; color:var(--muted)}
 .kv .v{font-family:'JetBrains Mono',monospace; font-weight:500; font-size:14px}
 .kv .v small{color:var(--faint); font-weight:400; font-size:11px}
+.forecast{margin-top:16px; padding:13px 15px; border-radius:10px; background:var(--ink);
+  border:1px solid var(--line); border-left:2px solid var(--accent)}
+.forecast .fc-main{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:16px; color:var(--text)}
+.forecast .fc-main span{color:var(--muted); font-weight:500; font-size:13px}
+.forecast .fc-main.fc-flat{font-size:14px; color:var(--muted); font-weight:500}
 
 .method{margin-top:42px; padding:22px; color:var(--muted); font-size:13px; line-height:1.7}
 .method h2{font-family:'Space Grotesk',sans-serif; color:var(--text); font-size:15px; margin:0 0 10px}
@@ -209,7 +214,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
     <section class="section">
       <div class="sec-head">
         <h2><span class="sec-no">02</span> Same cut-off, fair comparison</h2>
-        <p>Cumulative streams at exactly 7 / 14 / 21 / 28 days, plus pace to a shared milestone.</p>
+        <p>Cumulative streams at exactly 7 / 14 / 21 / 28 days, plus the day each single broke 250k and 500k.</p>
       </div>
       <div class="panel tbl-wrap"><table class="mtable" id="mtable"></table></div>
     </section>
@@ -225,7 +230,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
     <section class="section">
       <div class="sec-head">
         <h2><span class="sec-no">04</span> Single profile</h2>
-        <p>Metrics across each single's full run, with an auto-read of its shape.</p>
+        <p>Metrics across each single's full run — milestone timing and a 1M projection at the recent pace.</p>
       </div>
       <div class="cards" id="cards"></div>
     </section>
@@ -237,7 +242,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <li><b>Day 1</b> = first day with streams (release day). Leading zero days are stripped; calendar gaps after release are filled with 0.</li>
       <li><b>Week n</b> bundles days <code>(n-1)·7+1 … n·7</code> since release.</li>
       <li>Columns are auto-detected: the first date-parseable column is the date, the first numeric column is streams.</li>
-      <li>Re-uploading a single (matched by name, ignoring case and punctuation) <b>merges</b> by date instead of duplicating — newer values overwrite, new days are appended, color and visibility stay put.</li>
+      <li>Re-uploading a single <b>merges</b> by date instead of duplicating — newer values overwrite, new days are appended, color and visibility stay put. Matching ignores case, punctuation and Spotify's <code style="font-size:11px">-timeline</code> / counter suffixes (e.g. <code style="font-size:11px">(1)</code>), so repeat downloads land on the same single.</li>
       <li>Singles differ in age — lines run only as far as their data goes, and the <b>shared days</b> figure marks the only window all loaded singles cover.</li>
     </ul>
   </section>
@@ -276,7 +281,11 @@ function parseDate(s){
 function isoFromTs(ts){ const d=new Date(ts);
   return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")+"-"+String(d.getUTCDate()).padStart(2,"0"); }
 function cleanName(fn){
-  return fn.replace(/\.[^.]+$/,"").replace(/[-_]?timeline$/i,"").replace(/[_]+/g," ").replace(/\s+/g," ").trim() || "Untitled";
+  let n = fn.replace(/\.[^.]+$/,"");                 // drop extension
+  const m = n.match(/^(.*?)[\s_\-]*timeline\b/i);    // Spotify: <title>-timeline[(1)/-01/...]
+  if(m && m[1].trim()) n = m[1];                     // cut everything from "timeline" onward
+  else n = n.replace(/[\s_\-]*\(?\d+\)?$/,"");        // otherwise drop a trailing counter like (1) or -2
+  return n.replace(/[_]+/g," ").replace(/\s+/g," ").trim() || "Untitled";
 }
 function pickColor(){
   const used=new Set(singles.map(s=>s.color));
@@ -316,6 +325,31 @@ function computeSingle(name, releaseStr, daily){
           day1:daily[0]||0,week1,week2,retention,avg_last7,cumat};
 }
 function daysTo(s,th){ const f=s.series.find(p=>p.c>=th); return f?f.day:null; }
+
+// least-squares slope of y over x for an array of {x,y}
+function linregSlope(pts){
+  const n=pts.length; if(n<2) return null;
+  let sx=0,sy=0,sxx=0,sxy=0;
+  for(const p of pts){ sx+=p.x; sy+=p.y; sxx+=p.x*p.x; sxy+=p.x*p.y; }
+  const d=n*sxx-sx*sx; if(d===0) return null;
+  return (n*sxy-sx*sy)/d;
+}
+// project days-from-last-data-day until cumulative reaches `target`, at the recent pace
+function forecast(s, target){
+  const reached=daysTo(s,target);
+  if(reached!=null) return {reached:true, day:reached};
+  const W=Math.min(s.days_out,28);                              // recent window for "current pace"
+  const win=s.series.slice(s.days_out-W).map(p=>({x:p.day,y:p.c}));
+  let slope=linregSlope(win);
+  if(slope==null||slope<=0) slope=s.avg_last7;                  // fallback to recent daily average
+  if(!slope||slope<=0) return {possible:false};
+  const remaining=target-s.total, days=remaining/slope;
+  if(!isFinite(days)||days<=0) return {possible:false};
+  const lastTs=parseDate(s.release)+(s.days_out-1)*DAY;
+  const projTs=lastTs+Math.round(days)*DAY;
+  return {possible:true, days:Math.round(days), date:isoFromTs(projTs),
+          rate:Math.round(slope), lowConf:s.days_out<14};
+}
 
 function addSingleFromDaily(name, releaseStr, daily){
   const s=computeSingle(name, releaseStr, daily);
@@ -433,25 +467,24 @@ function renderCallout(){
     (youngest.days_out===md? `Note <b>${youngest.name}</b> sets this window with just ${md} days — a still-forming picture.` : ``);
 }
 
-function paceThreshold(){
-  const maxTotal=Math.max(0,...singles.map(s=>s.total));
-  for(const t of [1e6,5e5,2.5e5,1e5,5e4,2.5e4,1e4,5e3,1e3,500,100]) if(maxTotal>=t) return t;
-  return null;
-}
 function fmtK(t){ return t>=1e6?(t/1e6)+"M":t>=1e3?(t/1e3)+"k":(""+t); }
 
 function renderTable(){
-  const cols=[7,14,21,28], th=paceThreshold();
+  const cols=[7,14,21,28];               // cumulative streams at these days
+  const paceCols=[250000,500000];        // day on which each milestone broke
   let h="<thead><tr><th>Single</th>";
   cols.forEach(c=>h+=`<th>Day ${c}</th>`);
-  h+=`<th>${th?("→ "+fmtK(th)):"→ pace"}</th></tr></thead><tbody>`;
-  const leader={};
-  cols.forEach(c=>{let best=null; singles.forEach(s=>{const v=s.cumat[c]; if(v!=null&&(best==null||v>best))best=v; }); leader[c]=best;});
+  paceCols.forEach(t=>h+=`<th>&rarr; ${fmtK(t)}</th>`);
+  h+="</tr></thead><tbody>";
+  const leadCum={};                       // highest cumulative wins
+  cols.forEach(c=>{let best=null; singles.forEach(s=>{const v=s.cumat[c]; if(v!=null&&(best==null||v>best))best=v;}); leadCum[c]=best;});
+  const leadPace={};                      // fewest days (fastest) wins
+  paceCols.forEach(t=>{let best=null; singles.forEach(s=>{const d=daysTo(s,t); if(d!=null&&(best==null||d<best))best=d;}); leadPace[t]=best;});
   singles.forEach(s=>{
     h+=`<tr><td class="nm-cell"><span class="dot" style="background:${s.color}"></span>${s.name}</td>`;
-    cols.forEach(c=>{const v=s.cumat[c]; const cls=v==null?"na":(v===leader[c]?"lead":""); h+=`<td class="${cls}">${v==null?"n/a":fmt(v)}</td>`;});
-    const d=th?daysTo(s,th):null;
-    h+=`<td class="${d==null?'na':''}">${d==null?"n/a":("Day "+d)}</td></tr>`;
+    cols.forEach(c=>{const v=s.cumat[c]; const cls=v==null?"na":(v===leadCum[c]?"lead":""); h+=`<td class="${cls}">${v==null?"n/a":fmt(v)}</td>`;});
+    paceCols.forEach(t=>{const d=daysTo(s,t); const cls=d==null?"na":(d===leadPace[t]?"lead":""); h+=`<td class="${cls}">${d==null?"n/a":("Day "+d)}</td>`;});
+    h+="</tr>";
   });
   document.getElementById("mtable").innerHTML=h+"</tbody>";
 }
@@ -476,16 +509,25 @@ function renderCards(){
   const el=document.getElementById("cards"); el.innerHTML="";
   singles.forEach(s=>{
     const ret=s.retention!=null?(s.retention.toFixed(2)+"×"):"n/a";
+    const d100=daysTo(s,100000), d200=daysTo(s,200000);
+    const hit=d=>d!=null?("Day "+d):'<span style="color:var(--faint)">not yet</span>';
+    const f=forecast(s,1000000);
+    let fc;
+    if(f.reached) fc=`<div class="fc-main">Passed 1M <span>on day ${f.day}</span></div>`;
+    else if(!f.possible) fc=`<div class="fc-main fc-flat">1M not on current pace</div>`;
+    else fc=`<div class="fc-main">${fmt(f.days)} <span>days to 1M</span></div>`;
     const c=document.createElement("div"); c.className="panel card";
     c.innerHTML=`<div class="topbar" style="background:${s.color}"></div>
       <div class="tag">Released ${s.release} · ${s.days_out} days</div>
       <h3>${s.name}</h3>
       <div class="verdict">${verdict(s)}</div>
       <div class="kv"><span class="k">Total streams</span><span class="v">${fmt(s.total)}</span></div>
-      <div class="kv"><span class="k">Week 1</span><span class="v">${fmt(s.week1)}</span></div>
+      <div class="kv"><span class="k">Hit 100k</span><span class="v">${hit(d100)}</span></div>
+      <div class="kv"><span class="k">Hit 200k</span><span class="v">${hit(d200)}</span></div>
       <div class="kv"><span class="k">Retention W2/W1</span><span class="v">${ret}</span></div>
       <div class="kv"><span class="k">Peak day</span><span class="v">${fmt(s.peak_val)} <small>@ day ${s.peak_day}</small></span></div>
-      <div class="kv"><span class="k">Avg last 7 days</span><span class="v">${fmt(s.avg_last7)}<small>/day</small></span></div>`;
+      <div class="kv"><span class="k">Avg last 7 days</span><span class="v">${fmt(s.avg_last7)}<small>/day</small></span></div>
+      <div class="forecast" style="--accent:${s.color}">${fc}</div>`;
     el.appendChild(c);
   });
 }
