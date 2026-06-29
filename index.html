@@ -3,16 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Single Performance · Interactive Comparison</title>
+<title>Scot &amp; Millfield Single Analyzer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 :root{
   --ink:#0B0D13; --panel:#13161F; --panel2:#1A1E2A; --line:#252B39;
-  --text:#E8EBF2; --muted:#8B94A8; --faint:#5B6376; --amber:#FFB454;
+  --text:#E8EBF2; --muted:#8B94A8; --faint:#5B6376; --amber:#5DB1E6;
   --radius:14px;
 }
 *{box-sizing:border-box}
@@ -39,7 +40,7 @@ h1 em{font-style:normal; color:var(--amber)}
 .dropzone{border:1.5px dashed var(--line); border-radius:var(--radius); background:var(--panel);
   padding:26px 24px; display:flex; align-items:center; gap:20px; cursor:pointer; transition:.18s; flex-wrap:wrap}
 .dropzone:hover{border-color:var(--faint)}
-.dropzone.drag{border-color:var(--amber); background:rgba(255,180,84,.05)}
+.dropzone.drag{border-color:var(--amber); background:rgba(93,177,230,.06)}
 .dz-icon{width:46px; height:46px; flex:none; border-radius:11px; background:var(--panel2);
   display:grid; place-items:center; border:1px solid var(--line)}
 .dz-icon svg{width:22px; height:22px; stroke:var(--amber); fill:none; stroke-width:1.7}
@@ -51,7 +52,7 @@ h1 em{font-style:normal; color:var(--amber)}
   color:var(--muted); background:var(--ink); border:1px solid var(--line); border-radius:8px; padding:9px 14px;
   cursor:pointer; transition:.15s}
 .btn:hover{color:var(--text); border-color:var(--faint)}
-.btn.amber{color:var(--amber); border-color:rgba(255,180,84,.35)}
+.btn.amber{color:var(--amber); border-color:rgba(93,177,230,.4)}
 
 /* chips */
 .chips{display:flex; flex-wrap:wrap; gap:10px; margin:18px 0 0}
@@ -154,29 +155,79 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
   .fade-in{animation:fade .6s ease both}
   @keyframes fade{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:none}}
 }
+/* tabs */
+.tabs{display:flex; gap:4px; margin-top:24px; border-bottom:1px solid var(--line)}
+.tab{font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:600; color:var(--muted);
+  background:none; border:none; padding:11px 16px; cursor:pointer; position:relative; transition:.15s; top:1px}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--text)}
+.tab.on::after{content:""; position:absolute; left:0; right:0; bottom:0; height:2px; background:var(--amber)}
+.tab-panel{margin-top:8px}
+
+/* royalty bar canvas */
+.roy-total{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:26px; letter-spacing:-.01em; margin:2px 0 2px}
+.roy-sub{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--faint); margin-bottom:10px}
+.roy-bars{position:relative; height:140px; margin-top:4px}
+.roy-empty-note{font-size:12.5px; color:var(--faint); padding:18px 0}
+
+/* modal */
+.modal-overlay{position:fixed; inset:0; background:rgba(6,8,12,.74); backdrop-filter:blur(3px);
+  display:flex; align-items:center; justify-content:center; z-index:60; padding:20px}
+.modal-overlay.hidden{display:none}
+.modal{background:var(--panel); border:1px solid var(--line); border-radius:16px; width:100%; max-width:560px;
+  max-height:88vh; display:flex; flex-direction:column; box-shadow:0 24px 70px rgba(0,0,0,.5)}
+.modal-head{display:flex; align-items:center; justify-content:space-between; padding:20px 22px 14px; border-bottom:1px solid var(--line)}
+.modal-head h3{font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:600; margin:0}
+.modal-x{background:none; border:none; color:var(--muted); font-size:24px; line-height:1; cursor:pointer; padding:0 4px}
+.modal-x:hover{color:var(--text)}
+.modal-period{display:flex; align-items:center; gap:12px; padding:16px 22px; border-bottom:1px solid var(--line); flex-wrap:wrap}
+.rv-label{font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--faint)}
+.rv-year{width:88px; background:var(--ink); border:1px solid var(--line); border-radius:8px; color:var(--text);
+  font-family:'JetBrains Mono',monospace; font-size:14px; padding:7px 10px}
+.rv-src{font-size:12px; color:var(--faint); margin-left:auto}
+.modal-body{padding:8px 22px; overflow-y:auto}
+.rv-row{display:grid; grid-template-columns:22px 1fr 110px; gap:10px; align-items:center; padding:9px 0; border-bottom:1px solid var(--line)}
+.rv-row:last-child{border-bottom:none}
+.rv-row input[type=text]{background:var(--ink); border:1px solid var(--line); border-radius:7px; color:var(--text);
+  font-family:Inter; font-size:13.5px; padding:7px 10px; width:100%}
+.rv-amt{display:flex; align-items:center; gap:4px; background:var(--ink); border:1px solid var(--line); border-radius:7px; padding:0 8px}
+.rv-amt span{color:var(--faint); font-size:13px}
+.rv-amt input{background:none; border:none; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13.5px; padding:7px 2px; width:100%; text-align:right}
+.rv-row input[type=checkbox]{accent-color:var(--amber); width:16px; height:16px}
+.rv-row.off{opacity:.45}
+.modal-foot{display:flex; justify-content:flex-end; gap:10px; padding:14px 22px 20px; border-top:1px solid var(--line)}
+.modal-note{padding:14px 22px; color:var(--muted); font-size:13px}
+.modal-spinner{padding:30px 22px; text-align:center; color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px}
+
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <header class="top fade-in">
-    <div class="eyebrow">Single analysis · day-aligned</div>
-    <h1>Three singles, one shared <em>Day&nbsp;1</em>.</h1>
-    <p class="lede">Drop in a CSV per single. Each release is re-aligned so its <b>first day with streams = Day&nbsp;1</b>,
-    then everything — cumulative curves, weekly bars and metrics — recomputes live so you can compare like for like.</p>
+    <div class="eyebrow">Streaming &amp; royalties</div>
+    <h1>Scot &amp; Millfield <em>Single Analyzer</em></h1>
+    <p class="lede">all singles, one shared <b style="color:var(--amber)">day one</b></p>
 
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-tab="analytics" type="button">Analytics</button>
+      <button class="tab" data-tab="royalties" type="button">Royalties</button>
+    </div>
+  </header>
+
+  <div class="tab-panel" id="tab-analytics">
     <div class="uploader">
       <div class="dropzone" id="dropzone">
         <div class="dz-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5l5 5"/><path d="M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"/></svg></div>
         <div class="dz-text">
-          <div class="t">Drop CSV files here, or click to browse</div>
+          <div class="t">Drop Spotify for Artists timeline here, or click to browse</div>
           <div class="s">One file per single · needs a date column + a daily-streams column · re-upload the same single to update it · <code style="font-family:'JetBrains Mono';font-size:11px">YYYY-MM-DD</code> works best</div>
         </div>
         <div class="dz-actions">
           <button class="btn amber" id="demoBtn" type="button">Load demo</button>
           <button class="btn" id="backupBtn" type="button">Backup</button>
           <button class="btn" id="restoreBtn" type="button">Restore</button>
-          <button class="btn" id="clearBtn" type="button">Clear all</button>
+          <button class="btn" id="clearBtn" type="button">Clear</button>
         </div>
         <input type="file" id="fileInput" accept=".csv,text/csv" multiple hidden>
         <input type="file" id="jsonInput" accept=".json,application/json" hidden>
@@ -184,7 +235,6 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <div class="chips" id="chips"></div>
       <div class="persist-hint" id="persistHint"></div>
     </div>
-  </header>
 
   <div class="empty hidden" id="emptyState">
     <h3>No singles loaded</h3>
@@ -243,6 +293,63 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <div class="cards" id="cards"></div>
     </section>
   </div>
+  </div>
+
+  <div class="tab-panel" id="tab-royalties" hidden>
+    <div class="uploader">
+      <div class="dropzone" id="pdfDrop">
+        <div class="dz-icon"><svg viewBox="0 0 24 24"><path d="M14 3v5h5"/><path d="M7 3h8l5 5v11a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M9.5 13.5h1.2a1.3 1.3 0 010 2.6H9.5V12m4 0v4.1m0-4.1h1.6m-1.6 2h1.2"/></svg></div>
+        <div class="dz-text">
+          <div class="t">Drop a Melino royalty statement PDF, or click to browse</div>
+          <div class="s">Multiple tracks per statement are detected automatically · you confirm the figures before they're saved · re-importing the same half-year updates it</div>
+        </div>
+        <div class="dz-actions">
+          <button class="btn amber" id="royDemoBtn" type="button">Load demo</button>
+          <button class="btn" id="royClearBtn" type="button">Clear royalties</button>
+        </div>
+        <input type="file" id="pdfInput" accept="application/pdf,.pdf" multiple hidden>
+      </div>
+      <div class="persist-hint" id="royHint"></div>
+    </div>
+
+    <div class="empty hidden" id="royEmpty">
+      <h3>No royalties yet</h3>
+      <p>Drop a Melino royalty statement PDF above, or hit <b>Load demo</b> to see example earnings.</p>
+    </div>
+
+    <div id="royDash">
+      <section class="section">
+        <div class="sec-head">
+          <h2><span class="sec-no">€</span> Earnings per track</h2>
+          <p id="royLede">One bar per half-year. Hover a bar for the exact period and amount.</p>
+        </div>
+        <div class="cards" id="royaltyCards"></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="reviewModal">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="rvTitle">Review royalty import</h3>
+        <button class="modal-x" id="modalClose" type="button">&times;</button>
+      </div>
+      <div class="modal-period">
+        <span class="rv-label">Period</span>
+        <input type="number" id="rvYear" class="rv-year" min="2000" max="2099">
+        <div class="ctrl" id="rvHalf">
+          <button data-half="H1" type="button">H1</button>
+          <button data-half="H2" type="button">H2</button>
+        </div>
+        <span class="rv-src" id="rvSource"></span>
+      </div>
+      <div class="modal-body" id="rvRows"></div>
+      <div class="modal-foot">
+        <button class="btn" id="rvCancel" type="button">Cancel</button>
+        <button class="btn amber" id="rvConfirm" type="button">Import</button>
+      </div>
+    </div>
+  </div>
 
   <section class="panel method">
     <h2>Method &amp; reading notes</h2>
@@ -253,6 +360,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <li>Re-uploading a single <b>merges</b> by date instead of duplicating — newer values overwrite, new days are appended, color and visibility stay put. Matching ignores case, punctuation and Spotify's <code style="font-size:11px">-timeline</code> / counter suffixes (e.g. <code style="font-size:11px">(1)</code>), so repeat downloads land on the same single.</li>
       <li>Singles differ in age — lines run only as far as their data goes, and the <b>shared days</b> figure marks the only window all loaded singles cover.</li>
       <li>Your data <b>auto-saves in this browser</b> and reloads on open. It lives per device/browser — use <b>Backup</b> to download a JSON copy and <b>Restore</b> to load it on another device or after clearing browser data.</li>
+      <li><b>Royalties</b> are a separate set from streaming singles. Melino PDF statements are read in-browser; each track's earnings are summed per half-year. You always confirm the detected figures before they're saved, and re-importing the same half-year overwrites it rather than duplicating.</li>
     </ul>
   </section>
 
@@ -588,7 +696,8 @@ const STORE_KEY="singleAnalytics.v1";
 let canPersist=(()=>{ try{ const k="__t__"; localStorage.setItem(k,"1"); localStorage.removeItem(k); return true; }catch(e){ return false; } })();
 function serialize(){
   return {v:1, savedAt:new Date().toISOString(),
-    singles:singles.map(s=>({name:s.name,color:s.color,release:s.release,daily:s.series.map(p=>p.s),visible:visible[s.name]!==false}))};
+    singles:singles.map(s=>({name:s.name,color:s.color,release:s.release,daily:s.series.map(p=>p.s),visible:visible[s.name]!==false})),
+    royalties:royaltyTracks.map(t=>({name:t.name,color:t.color,entries:t.entries}))};
 }
 function rebuildFromState(state){
   singles=[]; for(const k in visible) delete visible[k];
@@ -596,6 +705,11 @@ function rebuildFromState(state){
     if(!e||!e.release||!Array.isArray(e.daily)||!e.daily.length) return;
     const s=computeSingle(e.name||"Untitled", e.release, e.daily.map(Number));
     s.color=e.color||pickColor(); singles.push(s); visible[s.name]=e.visible!==false;
+  });
+  royaltyTracks=[];
+  (state.royalties||[]).forEach(e=>{
+    if(!e||!e.name||!e.entries||typeof e.entries!=="object") return;
+    royaltyTracks.push({name:e.name, color:e.color||royPickColor(), entries:e.entries});
   });
 }
 function saveState(){ if(!canPersist) return; try{ localStorage.setItem(STORE_KEY, JSON.stringify(serialize())); }catch(e){} }
@@ -622,9 +736,176 @@ function importBackup(file){
   r.readAsText(file);
 }
 function updatePersistHint(){
-  const el=document.getElementById("persistHint"); if(!el) return;
-  el.textContent = canPersist ? "Auto-saved in this browser." : "Auto-save unavailable here — use Backup / Restore to keep your data.";
-  el.className = "persist-hint"+(canPersist?" ok":"");
+  const txt = canPersist ? "Auto-saved in this browser." : "Auto-save unavailable here — use Backup / Restore to keep your data.";
+  const cls = "persist-hint"+(canPersist?" ok":"");
+  ["persistHint","royHint"].forEach(id=>{ const el=document.getElementById(id); if(el){ el.textContent=txt; el.className=cls; } });
+}
+
+/* ================= ROYALTIES ================= */
+const ROYALTY_SEED=[
+  {name:"Clear Skies", entries:{"2025-H2":4.48}},
+  {name:"Save the Night", entries:{"2025-H2":1.15}},
+  {name:"Talamanca", entries:{"2025-H2":15.24}}
+];
+let royaltyTracks=[];     // {name,color,entries:{ "YYYY-Hn":amount }}
+let royaltyCharts=[];
+if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }
+
+function moneyFmt(n){ return "€"+(+n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function periodKey(y,h){ return y+"-"+h; }
+function periodParse(k){ const a=k.split("-"); return {year:+a[0], half:a[1]}; }
+function periodSort(a,b){ const A=periodParse(a),B=periodParse(b); return A.year-B.year || A.half.localeCompare(B.half); }
+function royPickColor(){ const used=new Set(royaltyTracks.map(t=>t.color)); for(const c of PALETTE) if(!used.has(c)) return c; return PALETTE[royaltyTracks.length%PALETTE.length]; }
+function findRoyalty(name){ const k=normKey(name); return royaltyTracks.findIndex(t=>normKey(t.name)===k); }
+function royTotal(t){ return Object.values(t.entries).reduce((a,b)=>a+(+b||0),0); }
+function upsertRoyalty(name, period, amount){
+  const i=findRoyalty(name);
+  if(i>=0) royaltyTracks[i].entries[period]=amount;
+  else royaltyTracks.push({name, color:royPickColor(), entries:{[period]:amount}});
+}
+function removeRoyalty(name){ royaltyTracks=royaltyTracks.filter(t=>t.name!==name); renderRoyalties(); }
+
+/* ---- PDF extraction (pdf.js) ---- */
+async function extractPdfLines(buf){
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  const lines=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const page=await pdf.getPage(p);
+    const tc=await page.getTextContent();
+    const rows={};
+    tc.items.forEach(it=>{ if(!it.str||!it.str.trim()) return; const y=Math.round(it.transform[5]);
+      (rows[y]=rows[y]||[]).push({x:it.transform[4], s:it.str}); });
+    Object.keys(rows).map(Number).sort((a,b)=>b-a).forEach(y=>{
+      const line=rows[y].sort((a,b)=>a.x-b.x).map(o=>o.s).join(" ").replace(/\s+/g," ").trim();
+      if(line) lines.push(line);
+    });
+  }
+  return lines;
+}
+function parseMelino(lines){
+  const text=lines.join("\n"); let year=null,half=null,m;
+  if(m=text.match(/Royalty Statement\s+(\d{4})\s+(H[12])/i)){ year=+m[1]; half=m[2].toUpperCase(); }
+  else if(m=text.match(/Term:\s*(\d{2})\.(\d{2})\.(\d{4})/)){ year=+m[3]; half=(+m[2]<=6)?"H1":"H2"; }
+  let licensee=null; const li=lines.findIndex(l=>/^Licensee:/i.test(l));
+  if(li>=0) licensee=lines[li].replace(/^Licensee:\s*/i,"").trim()||null;
+  const money=/^(\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2})$/;
+  const tracks=[];
+  for(let i=0;i<lines.length;i++){
+    const cm=lines[i].match(/^Contract:\s*(.+?)\s*\(ID\s*(\d+)\)/i); if(!cm) continue;
+    const full=cm[1].trim(), id=cm[2];
+    const title=full.includes(" - ")?full.split(" - ").pop().trim():full;
+    let end=lines.length;
+    for(let j=i+1;j<lines.length;j++){ if(/^Contract:/i.test(lines[j])||/3rdParty\s*=/i.test(lines[j])){ end=j; break; } }
+    let total=null;
+    for(let j=i+1;j<end;j++){ const t=lines[j].match(money); if(t) total=parseFloat(t[1].replace(/,/g,"")); }
+    if(total!=null) tracks.push({title, id, amount:total});
+  }
+  if(!tracks.length){     // fallback: page-1 summary lines "<…> - <Title>" followed by an amount line
+    for(let i=0;i<lines.length-1;i++){
+      if(lines[i].includes(" - ") && money.test(lines[i+1]) && !/^Term/i.test(lines[i]) && !/^Royalty Statement/i.test(lines[i]))
+        tracks.push({title:lines[i].split(" - ").pop().trim(), id:null, amount:parseFloat(lines[i+1].replace(/,/g,""))});
+    }
+  }
+  return {year, half, licensee, tracks};
+}
+
+/* ---- review modal + import queue ---- */
+let pendingHalf="H2", pdfQueue=[];
+function openReview(parsed){
+  document.getElementById("reviewModal").classList.remove("hidden");
+  document.getElementById("rvYear").value=parsed.year||new Date().getFullYear();
+  pendingHalf=parsed.half||"H2";
+  document.querySelectorAll("#rvHalf button").forEach(b=>b.classList.toggle("on",b.dataset.half===pendingHalf));
+  document.getElementById("rvSource").textContent=parsed.licensee?("from "+parsed.licensee):"";
+  const rows=document.getElementById("rvRows"), confirm=document.getElementById("rvConfirm");
+  if(!parsed.tracks.length){
+    rows.innerHTML='<div class="modal-note">No tracks detected — this PDF may use a different layout. Try another statement, or we can add manual entry later.</div>';
+    confirm.disabled=true; return;
+  }
+  confirm.disabled=false;
+  rows.innerHTML=parsed.tracks.map((t,i)=>`
+    <div class="rv-row" data-i="${i}">
+      <input type="checkbox" checked data-role="inc">
+      <input type="text" value="${(t.title||'').replace(/"/g,'&quot;')}" data-role="title">
+      <div class="rv-amt"><span>€</span><input type="number" step="0.01" value="${(+t.amount||0).toFixed(2)}" data-role="amt"></div>
+    </div>`).join("");
+  rows.querySelectorAll('[data-role=inc]').forEach(c=>c.onchange=()=>c.closest(".rv-row").classList.toggle("off",!c.checked));
+}
+function closeReview(){ document.getElementById("reviewModal").classList.add("hidden"); }
+function afterReview(){ if(pdfQueue.length) setTimeout(()=>openReview(pdfQueue.shift()),180); }
+function confirmReview(){
+  const year=parseInt(document.getElementById("rvYear").value)||new Date().getFullYear();
+  const period=periodKey(year, pendingHalf); let n=0;
+  document.querySelectorAll("#rvRows .rv-row").forEach(row=>{
+    if(!row.querySelector('[data-role=inc]').checked) return;
+    const title=row.querySelector('[data-role=title]').value.trim();
+    const amt=parseFloat(row.querySelector('[data-role=amt]').value);
+    if(!title||isNaN(amt)) return;
+    upsertRoyalty(title, period, amt); n++;
+  });
+  closeReview(); renderRoyalties();
+  toast(n?`Imported ${n} track${n>1?'s':''} for ${period}.`:"Nothing imported.", n>0);
+  afterReview();
+}
+async function handlePdfFiles(files){
+  const arr=[...files].filter(f=>/\.pdf$/i.test(f.name)||f.type==="application/pdf");
+  if(!arr.length){ toast("No PDF files detected."); return; }
+  if(!window.pdfjsLib){ toast("PDF engine not loaded — check your connection."); return; }
+  for(const f of arr){
+    try{ const buf=await f.arrayBuffer(); const lines=await extractPdfLines(buf); pdfQueue.push(parseMelino(lines)); }
+    catch(e){ toast(`${f.name}: ${e.message}`); }
+  }
+  if(pdfQueue.length && document.getElementById("reviewModal").classList.contains("hidden")) openReview(pdfQueue.shift());
+}
+
+/* ---- royalty cards ---- */
+function loadRoyaltyDemo(){
+  ROYALTY_SEED.forEach(r=>{ if(findRoyalty(r.name)<0) royaltyTracks.push({name:r.name,color:royPickColor(),entries:Object.assign({},r.entries)}); });
+  renderRoyalties(); toast("Royalty demo loaded.",true);
+}
+function renderRoyalties(){
+  const empty=royaltyTracks.length===0;
+  document.getElementById("royEmpty").classList.toggle("hidden",!empty);
+  document.getElementById("royDash").style.display=empty?"none":"block";
+  saveState();
+  royaltyCharts.forEach(c=>{try{c.destroy();}catch(e){}}); royaltyCharts=[];
+  if(empty) return;
+  const el=document.getElementById("royaltyCards"); el.innerHTML="";
+  const tabHidden=document.getElementById("tab-royalties").hidden;
+  const sorted=[...royaltyTracks].sort((a,b)=>royTotal(b)-royTotal(a));
+  const multiYear=new Set([].concat(...sorted.map(t=>Object.keys(t.entries).map(k=>periodParse(k).year)))).size>1;
+  sorted.forEach((t,i)=>{
+    const periods=Object.keys(t.entries).sort(periodSort);
+    const latest=periods[periods.length-1];
+    const c=document.createElement("div"); c.className="panel card";
+    c.innerHTML=`<div class="topbar" style="background:${t.color}"></div>
+      <div class="tag">${periods.length} statement${periods.length>1?'s':''}${latest?' · latest '+latest.replace('-',' '):''}</div>
+      <h3>${t.name}</h3>
+      <div class="roy-total">${moneyFmt(royTotal(t))}</div>
+      <div class="roy-sub">total earned</div>
+      <div class="roy-bars"><canvas id="rc-${i}"></canvas></div>`;
+    el.appendChild(c);
+    if(tabHidden) return;       // build charts only when the tab is visible (correct sizing)
+    const labels=periods.map(k=>{const pp=periodParse(k); return multiYear? pp.half+" '"+String(pp.year).slice(2) : pp.half;});
+    const ch=new Chart(document.getElementById("rc-"+i),{type:"bar",
+      data:{labels,datasets:[{data:periods.map(k=>t.entries[k]),backgroundColor:t.color,borderRadius:4,maxBarThickness:54}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        scales:{x:{grid:{display:false},border:{color:"#252B39"},ticks:{font:{size:11}}},
+          y:{grid:{color:"rgba(37,43,57,.55)"},border:{display:false},beginAtZero:true,ticks:{font:{size:10},callback:v=>"€"+v}}},
+        plugins:{legend:{display:false},
+          tooltip:{backgroundColor:"#1A1E2A",borderColor:"#252B39",borderWidth:1,padding:11,cornerRadius:8,titleColor:"#E8EBF2",bodyColor:"#E8EBF2",
+            callbacks:{title:items=>{const pp=periodParse(periods[items[0].dataIndex]); return pp.half+" "+pp.year;}, label:i=>"  "+moneyFmt(i.parsed.y)+" earned"}}}}
+    });
+    royaltyCharts.push(ch);
+  });
+}
+
+/* ---- tabs ---- */
+function switchTab(name){
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===name));
+  document.getElementById("tab-analytics").hidden = name!=="analytics";
+  document.getElementById("tab-royalties").hidden = name!=="royalties";
+  if(name==="royalties") renderRoyalties();
 }
 
 /* ---------- wiring ---------- */
@@ -643,11 +924,30 @@ ji.onchange=()=>{ if(ji.files[0]) importBackup(ji.files[0]); ji.value=""; };
 document.querySelectorAll("#modeCtrl button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#modeCtrl button").forEach(x=>x.classList.remove("on"));b.classList.add("on");mode=b.dataset.mode;if(singles.length)buildMainChart();});
 document.querySelectorAll("#rangeCtrl button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#rangeCtrl button").forEach(x=>x.classList.remove("on"));b.classList.add("on");range=b.dataset.range;if(singles.length)buildMainChart();});
 
+/* tabs */
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+
+/* royalty PDF dropzone + buttons */
+const pdz=document.getElementById("pdfDrop"), pfi=document.getElementById("pdfInput");
+pdz.onclick=(e)=>{ if(e.target.closest(".btn")) return; pfi.click(); };
+pfi.onchange=()=>{ handlePdfFiles(pfi.files); pfi.value=""; };
+["dragenter","dragover"].forEach(ev=>pdz.addEventListener(ev,e=>{e.preventDefault();pdz.classList.add("drag");}));
+["dragleave","drop"].forEach(ev=>pdz.addEventListener(ev,e=>{e.preventDefault();pdz.classList.remove("drag");}));
+pdz.addEventListener("drop",e=>handlePdfFiles(e.dataTransfer.files));
+document.getElementById("royDemoBtn").onclick=loadRoyaltyDemo;
+document.getElementById("royClearBtn").onclick=()=>{royaltyTracks=[];renderRoyalties();toast("Royalties cleared.",true);};
+
+/* review modal */
+document.getElementById("modalClose").onclick=()=>{closeReview();afterReview();};
+document.getElementById("rvCancel").onclick=()=>{closeReview();afterReview();};
+document.getElementById("rvConfirm").onclick=confirmReview;
+document.querySelectorAll("#rvHalf button").forEach(b=>b.onclick=()=>{pendingHalf=b.dataset.half;document.querySelectorAll("#rvHalf button").forEach(x=>x.classList.toggle("on",x===b));});
+
 document.getElementById("footStamp").textContent="Updated "+new Date().toLocaleDateString("en-US",{day:"2-digit",month:"short",year:"numeric"});
 
 /* boot: restore saved state if present, otherwise seed with demo */
-if(loadState()) renderAll();   // respects a saved state even if it's empty (user cleared)
-else loadDemo();               // first ever visit
+if(loadState()){ renderAll(); renderRoyalties(); }   // respects a saved state even if empty
+else { loadDemo(); loadRoyaltyDemo(); }              // first ever visit seeds both tabs
 updatePersistHint();
 </script>
 </body>
