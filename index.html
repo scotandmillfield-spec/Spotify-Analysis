@@ -55,6 +55,10 @@ h1 em{font-style:normal; color:var(--amber)}
 
 /* chips */
 .chips{display:flex; flex-wrap:wrap; gap:10px; margin:18px 0 0}
+.persist-hint{font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.04em; color:var(--faint); margin:12px 0 0; display:flex; align-items:center; gap:7px}
+.persist-hint::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--faint); flex:none}
+.persist-hint.ok{color:var(--muted)}
+.persist-hint.ok::before{background:#2DD4BF}
 .chip{display:inline-flex; align-items:center; gap:9px; padding:7px 8px 7px 12px;
   border:1px solid var(--line); border-radius:999px; background:var(--panel); cursor:pointer; user-select:none; transition:.18s; font-size:13.5px}
 .chip:hover{border-color:var(--faint)}
@@ -170,11 +174,15 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
         </div>
         <div class="dz-actions">
           <button class="btn amber" id="demoBtn" type="button">Load demo</button>
+          <button class="btn" id="backupBtn" type="button">Backup</button>
+          <button class="btn" id="restoreBtn" type="button">Restore</button>
           <button class="btn" id="clearBtn" type="button">Clear all</button>
         </div>
         <input type="file" id="fileInput" accept=".csv,text/csv" multiple hidden>
+        <input type="file" id="jsonInput" accept=".json,application/json" hidden>
       </div>
       <div class="chips" id="chips"></div>
+      <div class="persist-hint" id="persistHint"></div>
     </div>
   </header>
 
@@ -244,6 +252,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <li>Columns are auto-detected: the first date-parseable column is the date, the first numeric column is streams.</li>
       <li>Re-uploading a single <b>merges</b> by date instead of duplicating — newer values overwrite, new days are appended, color and visibility stay put. Matching ignores case, punctuation and Spotify's <code style="font-size:11px">-timeline</code> / counter suffixes (e.g. <code style="font-size:11px">(1)</code>), so repeat downloads land on the same single.</li>
       <li>Singles differ in age — lines run only as far as their data goes, and the <b>shared days</b> figure marks the only window all loaded singles cover.</li>
+      <li>Your data <b>auto-saves in this browser</b> and reloads on open. It lives per device/browser — use <b>Backup</b> to download a JSON copy and <b>Restore</b> to load it on another device or after clearing browser data.</li>
     </ul>
   </section>
 
@@ -538,6 +547,7 @@ function renderAll(){
   document.getElementById("dashboard").style.display=empty?"none":"block";
   renderChips();
   document.getElementById("footCount").textContent=singles.length+" single"+(singles.length===1?"":"s")+" · day-aligned";
+  saveState();
   if(empty){ if(mainChart)mainChart.destroy(); if(weeklyChart)weeklyChart.destroy(); return; }
   buildMainChart(); renderCallout(); renderTable(); renderWeekly(); renderCards();
 }
@@ -573,6 +583,50 @@ function loadDemo(){
   renderAll(); toast("Demo data loaded.",true);
 }
 
+/* ---------- persistence (localStorage + JSON backup) ---------- */
+const STORE_KEY="singleAnalytics.v1";
+let canPersist=(()=>{ try{ const k="__t__"; localStorage.setItem(k,"1"); localStorage.removeItem(k); return true; }catch(e){ return false; } })();
+function serialize(){
+  return {v:1, savedAt:new Date().toISOString(),
+    singles:singles.map(s=>({name:s.name,color:s.color,release:s.release,daily:s.series.map(p=>p.s),visible:visible[s.name]!==false}))};
+}
+function rebuildFromState(state){
+  singles=[]; for(const k in visible) delete visible[k];
+  (state.singles||[]).forEach(e=>{
+    if(!e||!e.release||!Array.isArray(e.daily)||!e.daily.length) return;
+    const s=computeSingle(e.name||"Untitled", e.release, e.daily.map(Number));
+    s.color=e.color||pickColor(); singles.push(s); visible[s.name]=e.visible!==false;
+  });
+}
+function saveState(){ if(!canPersist) return; try{ localStorage.setItem(STORE_KEY, JSON.stringify(serialize())); }catch(e){} }
+function loadState(){
+  if(!canPersist) return false;
+  let raw; try{ raw=localStorage.getItem(STORE_KEY); }catch(e){ return false; }
+  if(!raw) return false;
+  try{ rebuildFromState(JSON.parse(raw)); return true; }catch(e){ return false; }
+}
+function exportBackup(){
+  const blob=new Blob([JSON.stringify(serialize(),null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download="single-analytics-backup-"+new Date().toISOString().slice(0,10)+".json"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000); toast("Backup downloaded.",true);
+}
+function importBackup(file){
+  const r=new FileReader();
+  r.onload=()=>{ try{ const st=JSON.parse(r.result);
+      if(!st||!Array.isArray(st.singles)) throw new Error("not a valid backup file");
+      rebuildFromState(st); renderAll();
+      toast(`Restored ${singles.length} single${singles.length===1?'':'s'}.`,true);
+    }catch(e){ toast("Restore failed: "+e.message); } };
+  r.onerror=()=>toast("Could not read backup file.");
+  r.readAsText(file);
+}
+function updatePersistHint(){
+  const el=document.getElementById("persistHint"); if(!el) return;
+  el.textContent = canPersist ? "Auto-saved in this browser." : "Auto-save unavailable here — use Backup / Restore to keep your data.";
+  el.className = "persist-hint"+(canPersist?" ok":"");
+}
+
 /* ---------- wiring ---------- */
 const dz=document.getElementById("dropzone"), fi=document.getElementById("fileInput");
 dz.onclick=(e)=>{ if(e.target.closest(".btn")) return; fi.click(); };
@@ -582,13 +636,19 @@ fi.onchange=()=>{ handleFiles(fi.files); fi.value=""; };
 dz.addEventListener("drop",e=>handleFiles(e.dataTransfer.files));
 document.getElementById("demoBtn").onclick=loadDemo;
 document.getElementById("clearBtn").onclick=()=>{singles=[];for(const k in visible)delete visible[k];renderAll();toast("Cleared.",true);};
+document.getElementById("backupBtn").onclick=exportBackup;
+const ji=document.getElementById("jsonInput");
+document.getElementById("restoreBtn").onclick=()=>ji.click();
+ji.onchange=()=>{ if(ji.files[0]) importBackup(ji.files[0]); ji.value=""; };
 document.querySelectorAll("#modeCtrl button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#modeCtrl button").forEach(x=>x.classList.remove("on"));b.classList.add("on");mode=b.dataset.mode;if(singles.length)buildMainChart();});
 document.querySelectorAll("#rangeCtrl button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#rangeCtrl button").forEach(x=>x.classList.remove("on"));b.classList.add("on");range=b.dataset.range;if(singles.length)buildMainChart();});
 
 document.getElementById("footStamp").textContent="Updated "+new Date().toLocaleDateString("en-US",{day:"2-digit",month:"short",year:"numeric"});
 
-/* boot with demo so it's populated */
-loadDemo();
+/* boot: restore saved state if present, otherwise seed with demo */
+if(loadState()) renderAll();   // respects a saved state even if it's empty (user cleared)
+else loadDemo();               // first ever visit
+updatePersistHint();
 </script>
 </body>
 </html>
