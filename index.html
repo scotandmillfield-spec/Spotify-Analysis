@@ -185,6 +185,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 .rv-year{width:88px; background:var(--ink); border:1px solid var(--line); border-radius:8px; color:var(--text);
   font-family:'JetBrains Mono',monospace; font-size:14px; padding:7px 10px}
 .rv-src{font-size:12px; color:var(--faint); margin-left:auto}
+.rv-labelinput{flex:1; min-width:160px; background:var(--ink); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:Inter; font-size:13.5px; padding:8px 11px}
 .modal-body{padding:8px 22px; overflow-y:auto}
 .rv-row{display:grid; grid-template-columns:22px 1fr 110px; gap:10px; align-items:center; padding:9px 0; border-bottom:1px solid var(--line)}
 .rv-row:last-child{border-bottom:none}
@@ -301,7 +302,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
         <div class="dz-icon"><svg viewBox="0 0 24 24"><path d="M14 3v5h5"/><path d="M7 3h8l5 5v11a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M9.5 13.5h1.2a1.3 1.3 0 010 2.6H9.5V12m4 0v4.1m0-4.1h1.6m-1.6 2h1.2"/></svg></div>
         <div class="dz-text">
           <div class="t">Drop a Melino royalty statement PDF, or click to browse</div>
-          <div class="s">Multiple tracks per statement are detected automatically · you confirm the figures before they're saved · re-importing the same half-year updates it</div>
+          <div class="s">English &amp; German Melino statements are recognised automatically · multiple tracks per statement are detected · you confirm the figures before they're saved · re-importing the same half-year updates it</div>
         </div>
         <div class="dz-actions">
           <button class="btn amber" id="royDemoBtn" type="button">Load demo</button>
@@ -325,6 +326,14 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
         </div>
         <div class="cards" id="royaltyCards"></div>
       </section>
+
+      <section class="section" id="roySummarySec">
+        <div class="sec-head">
+          <h2><span class="sec-no">&Sigma;</span> Royalties by label &amp; half-year</h2>
+          <p>Totals per statement source, per period — useful for reconciling against payouts.</p>
+        </div>
+        <div class="panel tbl-wrap"><table class="mtable" id="roySummary"></table></div>
+      </section>
     </div>
   </div>
 
@@ -341,7 +350,10 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
           <button data-half="H1" type="button">H1</button>
           <button data-half="H2" type="button">H2</button>
         </div>
-        <span class="rv-src" id="rvSource"></span>
+      </div>
+      <div class="modal-period" style="border-top:none">
+        <span class="rv-label">Label</span>
+        <input type="text" id="rvLabel" class="rv-labelinput" placeholder="Statement source / licensee">
       </div>
       <div class="modal-body" id="rvRows"></div>
       <div class="modal-foot">
@@ -709,7 +721,10 @@ function rebuildFromState(state){
   royaltyTracks=[];
   (state.royalties||[]).forEach(e=>{
     if(!e||!e.name||!e.entries||typeof e.entries!=="object") return;
-    royaltyTracks.push({name:e.name, color:e.color||royPickColor(), entries:e.entries});
+    const entries={};
+    Object.keys(e.entries).forEach(k=>{ const v=e.entries[k];
+      entries[k] = (v && typeof v==="object") ? {amount:+v.amount||0, label:v.label||null} : {amount:+v||0, label:null}; });
+    royaltyTracks.push({name:e.name, color:e.color||royPickColor(), entries});
   });
 }
 function saveState(){ if(!canPersist) return; try{ localStorage.setItem(STORE_KEY, JSON.stringify(serialize())); }catch(e){} }
@@ -743,25 +758,29 @@ function updatePersistHint(){
 
 /* ================= ROYALTIES ================= */
 const ROYALTY_SEED=[
-  {name:"Clear Skies", entries:{"2025-H2":4.48}},
-  {name:"Save the Night", entries:{"2025-H2":1.15}},
-  {name:"Talamanca", entries:{"2025-H2":15.24}}
+  {name:"Clear Skies", entries:{"2025-H2":{amount:4.48, label:"Black Hole Recordings B.V."}}},
+  {name:"Save the Night", entries:{"2025-H2":{amount:1.15, label:"Black Hole Recordings B.V."}}},
+  {name:"Talamanca", entries:{"2025-H2":{amount:15.24, label:"Black Hole Recordings B.V."}}}
 ];
-let royaltyTracks=[];     // {name,color,entries:{ "YYYY-Hn":amount }}
+let royaltyTracks=[];     // {name,color,entries:{ "YYYY-Hn":{amount,label} }}
 let royaltyCharts=[];
 if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }
 
 function moneyFmt(n){ return "€"+(+n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function entryAmount(e){ return (e && typeof e==="object") ? (+e.amount||0) : (+e||0); }   // tolerate legacy plain-number entries
+function entryLabel(e){ return (e && typeof e==="object") ? (e.label||null) : null; }
 function periodKey(y,h){ return y+"-"+h; }
 function periodParse(k){ const a=k.split("-"); return {year:+a[0], half:a[1]}; }
+function periodLabel(k){ const p=periodParse(k); return p.half+" "+p.year; }
 function periodSort(a,b){ const A=periodParse(a),B=periodParse(b); return A.year-B.year || A.half.localeCompare(B.half); }
 function royPickColor(){ const used=new Set(royaltyTracks.map(t=>t.color)); for(const c of PALETTE) if(!used.has(c)) return c; return PALETTE[royaltyTracks.length%PALETTE.length]; }
 function findRoyalty(name){ const k=normKey(name); return royaltyTracks.findIndex(t=>normKey(t.name)===k); }
-function royTotal(t){ return Object.values(t.entries).reduce((a,b)=>a+(+b||0),0); }
-function upsertRoyalty(name, period, amount){
+function royTotal(t){ return Object.values(t.entries).reduce((a,e)=>a+entryAmount(e),0); }
+function upsertRoyalty(name, period, amount, label){
+  const entry={amount:+amount, label:label||null};
   const i=findRoyalty(name);
-  if(i>=0) royaltyTracks[i].entries[period]=amount;
-  else royaltyTracks.push({name, color:royPickColor(), entries:{[period]:amount}});
+  if(i>=0) royaltyTracks[i].entries[period]=entry;
+  else royaltyTracks.push({name, color:royPickColor(), entries:{[period]:entry}});
 }
 function removeRoyalty(name){ royaltyTracks=royaltyTracks.filter(t=>t.name!==name); renderRoyalties(); }
 
@@ -783,28 +802,30 @@ async function extractPdfLines(buf){
   return lines;
 }
 function parseMelino(lines){
-  const text=lines.join("\n"); let year=null,half=null,m;
-  if(m=text.match(/Royalty Statement\s+(\d{4})\s+(H[12])/i)){ year=+m[1]; half=m[2].toUpperCase(); }
-  else if(m=text.match(/Term:\s*(\d{2})\.(\d{2})\.(\d{4})/)){ year=+m[3]; half=(+m[2]<=6)?"H1":"H2"; }
-  let licensee=null; const li=lines.findIndex(l=>/^Licensee:/i.test(l));
-  if(li>=0) licensee=lines[li].replace(/^Licensee:\s*/i,"").trim()||null;
-  const money=/^(\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2})$/;
+  const text=lines.join("\n");
+  const german=/Lizenzabrechnung|Vertrag:|Zeitraum:|Lizenznehmer:/i.test(text);
+  let year=null,half=null,m;
+  if(m=text.match(/(?:Royalty\s*Statement|Lizenzabrechnung)\s+(\d{4})\s+(H[12])/i)){ year=+m[1]; half=m[2].toUpperCase(); }
+  else if(m=text.match(/(?:Term|Zeitraum):\s*(\d{2})\.(\d{2})\.(\d{4})/i)){ year=+m[3]; half=(+m[2]<=6)?"H1":"H2"; }
+  let licensee=null; const li=lines.findIndex(l=>/^(?:Licensee|Lizenznehmer):/i.test(l));
+  if(li>=0) licensee=lines[li].replace(/^(?:Licensee|Lizenznehmer):\s*/i,"").trim()||null;
+  // number format: German uses comma decimals (113,52), English dot decimals (4.48)
+  const money = german ? /^\d{1,3}(?:\.\d{3})*,\d{2}$/ : /^\d{1,3}(?:,\d{3})*\.\d{2}$/;
+  const parseAmt = s => german ? parseFloat(s.replace(/\./g,"").replace(",",".")) : parseFloat(s.replace(/,/g,""));
+  const cleanTitle = name => {
+    let t=name.replace(/\s*\(\s*Contract\s*No\.?[^)]*\)\s*$/i,"").trim();   // drop trailing "( Contract No XXX )"
+    const parts=t.split(/\s+[-–—]\s+/);                                     // split on spaced hyphen / en-dash / em-dash
+    return parts[parts.length-1].trim();
+  };
   const tracks=[];
   for(let i=0;i<lines.length;i++){
-    const cm=lines[i].match(/^Contract:\s*(.+?)\s*\(ID\s*(\d+)\)/i); if(!cm) continue;
-    const full=cm[1].trim(), id=cm[2];
-    const title=full.includes(" - ")?full.split(" - ").pop().trim():full;
+    const cm=lines[i].match(/^(?:Contract|Vertrag):\s*(.+?)\s*\(ID\s*(\d+)\)/i); if(!cm) continue;
+    const id=cm[2], title=cleanTitle(cm[1].trim());
     let end=lines.length;
-    for(let j=i+1;j<lines.length;j++){ if(/^Contract:/i.test(lines[j])||/3rdParty\s*=/i.test(lines[j])){ end=j; break; } }
+    for(let j=i+1;j<lines.length;j++){ if(/^(?:Contract|Vertrag):/i.test(lines[j]) || /=\s*[\d.,]+\s*%/.test(lines[j])){ end=j; break; } }
     let total=null;
-    for(let j=i+1;j<end;j++){ const t=lines[j].match(money); if(t) total=parseFloat(t[1].replace(/,/g,"")); }
+    for(let j=i+1;j<end;j++){ if(money.test(lines[j])) total=parseAmt(lines[j]); }  // section total = last money line (sum of royalty column)
     if(total!=null) tracks.push({title, id, amount:total});
-  }
-  if(!tracks.length){     // fallback: page-1 summary lines "<…> - <Title>" followed by an amount line
-    for(let i=0;i<lines.length-1;i++){
-      if(lines[i].includes(" - ") && money.test(lines[i+1]) && !/^Term/i.test(lines[i]) && !/^Royalty Statement/i.test(lines[i]))
-        tracks.push({title:lines[i].split(" - ").pop().trim(), id:null, amount:parseFloat(lines[i+1].replace(/,/g,""))});
-    }
   }
   return {year, half, licensee, tracks};
 }
@@ -816,7 +837,7 @@ function openReview(parsed){
   document.getElementById("rvYear").value=parsed.year||new Date().getFullYear();
   pendingHalf=parsed.half||"H2";
   document.querySelectorAll("#rvHalf button").forEach(b=>b.classList.toggle("on",b.dataset.half===pendingHalf));
-  document.getElementById("rvSource").textContent=parsed.licensee?("from "+parsed.licensee):"";
+  document.getElementById("rvLabel").value=parsed.licensee||"";
   const rows=document.getElementById("rvRows"), confirm=document.getElementById("rvConfirm");
   if(!parsed.tracks.length){
     rows.innerHTML='<div class="modal-note">No tracks detected — this PDF may use a different layout. Try another statement, or we can add manual entry later.</div>';
@@ -835,13 +856,14 @@ function closeReview(){ document.getElementById("reviewModal").classList.add("hi
 function afterReview(){ if(pdfQueue.length) setTimeout(()=>openReview(pdfQueue.shift()),180); }
 function confirmReview(){
   const year=parseInt(document.getElementById("rvYear").value)||new Date().getFullYear();
+  const label=document.getElementById("rvLabel").value.trim()||null;
   const period=periodKey(year, pendingHalf); let n=0;
   document.querySelectorAll("#rvRows .rv-row").forEach(row=>{
     if(!row.querySelector('[data-role=inc]').checked) return;
     const title=row.querySelector('[data-role=title]').value.trim();
     const amt=parseFloat(row.querySelector('[data-role=amt]').value);
     if(!title||isNaN(amt)) return;
-    upsertRoyalty(title, period, amt); n++;
+    upsertRoyalty(title, period, amt, label); n++;
   });
   closeReview(); renderRoyalties();
   toast(n?`Imported ${n} track${n>1?'s':''} for ${period}.`:"Nothing imported.", n>0);
@@ -860,7 +882,7 @@ async function handlePdfFiles(files){
 
 /* ---- royalty cards ---- */
 function loadRoyaltyDemo(){
-  ROYALTY_SEED.forEach(r=>{ if(findRoyalty(r.name)<0) royaltyTracks.push({name:r.name,color:royPickColor(),entries:Object.assign({},r.entries)}); });
+  ROYALTY_SEED.forEach(r=>{ if(findRoyalty(r.name)<0) royaltyTracks.push({name:r.name,color:royPickColor(),entries:JSON.parse(JSON.stringify(r.entries))}); });
   renderRoyalties(); toast("Royalty demo loaded.",true);
 }
 function renderRoyalties(){
@@ -888,7 +910,7 @@ function renderRoyalties(){
     if(tabHidden) return;       // build charts only when the tab is visible (correct sizing)
     const labels=periods.map(k=>{const pp=periodParse(k); return multiYear? pp.half+" '"+String(pp.year).slice(2) : pp.half;});
     const ch=new Chart(document.getElementById("rc-"+i),{type:"bar",
-      data:{labels,datasets:[{data:periods.map(k=>t.entries[k]),backgroundColor:t.color,borderRadius:4,maxBarThickness:54}]},
+      data:{labels,datasets:[{data:periods.map(k=>entryAmount(t.entries[k])),backgroundColor:t.color,borderRadius:4,maxBarThickness:54}]},
       options:{responsive:true,maintainAspectRatio:false,
         scales:{x:{grid:{display:false},border:{color:"#252B39"},ticks:{font:{size:11}}},
           y:{grid:{color:"rgba(37,43,57,.55)"},border:{display:false},beginAtZero:true,ticks:{font:{size:10},callback:v=>"€"+v}}},
@@ -898,6 +920,44 @@ function renderRoyalties(){
     });
     royaltyCharts.push(ch);
   });
+  renderRoyaltySummary();
+}
+
+/* ---- royalties by label & half-year ---- */
+function renderRoyaltySummary(){
+  const sec=document.getElementById("roySummarySec"), tbl=document.getElementById("roySummary");
+  if(!sec||!tbl) return;
+  // aggregate amount by label -> period
+  const agg={}, periodSet=new Set();
+  royaltyTracks.forEach(t=>Object.keys(t.entries).forEach(k=>{
+    const lab=entryLabel(t.entries[k])||"Unattributed";
+    periodSet.add(k);
+    (agg[lab]=agg[lab]||{})[k]=(agg[lab][k]||0)+entryAmount(t.entries[k]);
+  }));
+  const periods=[...periodSet].sort(periodSort);
+  const labels=Object.keys(agg).sort((a,b)=>{
+    const sa=Object.values(agg[a]).reduce((x,y)=>x+y,0), sb=Object.values(agg[b]).reduce((x,y)=>x+y,0); return sb-sa;
+  });
+  if(!labels.length || !periods.length){ sec.style.display="none"; return; }
+  sec.style.display="block";
+  let h="<thead><tr><th>Label</th>";
+  periods.forEach(p=>h+=`<th>${periodLabel(p)}</th>`);
+  h+="<th>Total</th></tr></thead><tbody>";
+  const colTot={}; let grand=0;
+  labels.forEach(lab=>{
+    h+=`<tr><td class="nm-cell">${lab}</td>`;
+    let rowTot=0;
+    periods.forEach(p=>{ const v=agg[lab][p]; if(v!=null){ rowTot+=v; colTot[p]=(colTot[p]||0)+v; }
+      h+=`<td class="${v==null?'na':''}">${v==null?"–":moneyFmt(v)}</td>`; });
+    grand+=rowTot;
+    h+=`<td>${moneyFmt(rowTot)}</td></tr>`;
+  });
+  if(labels.length>1){
+    h+=`<tr><td class="nm-cell" style="color:var(--muted)">All labels</td>`;
+    periods.forEach(p=>h+=`<td class="lead">${moneyFmt(colTot[p]||0)}</td>`);
+    h+=`<td class="lead">${moneyFmt(grand)}</td></tr>`;
+  }
+  tbl.innerHTML=h+"</tbody>";
 }
 
 /* ---- tabs ---- */
