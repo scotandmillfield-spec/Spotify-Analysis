@@ -163,6 +163,8 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 .tab:hover{color:var(--text)}
 .tab.on{color:var(--text)}
 .tab.on::after{content:""; position:absolute; left:0; right:0; bottom:0; height:2px; background:var(--amber)}
+.tab-gear{margin-left:auto; display:inline-flex; align-items:center; padding:0 10px}
+.tab-gear svg{fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round}
 .tab-panel{margin-top:8px}
 
 /* royalty bar canvas */
@@ -232,6 +234,9 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <button class="tab on" data-tab="analytics" type="button">Analytics</button>
       <button class="tab" data-tab="royalties" type="button">Royalties</button>
       <button class="tab" data-tab="invoices" type="button">Invoices</button>
+      <button class="tab tab-gear" data-tab="settings" type="button" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/><path d="M19.4 13a7.6 7.6 0 000-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 00-1.7-1l-.4-2.5H8.8l-.4 2.5a7.6 7.6 0 00-1.7 1l-2.4-1-2 3.4L4.6 11a7.6 7.6 0 000 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 001.7 1l.4 2.5h6.4l.4-2.5a7.6 7.6 0 001.7-1l2.4 1 2-3.4-2-1.6z"/></svg>
+      </button>
     </div>
   </header>
 
@@ -359,8 +364,21 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
   <div class="tab-panel" id="tab-invoices" hidden>
     <section class="section">
       <div class="sec-head">
-        <h2><span class="sec-no">1</span> Your details</h2>
-        <p>Used as the letterhead on every invoice. Stored in this browser — edit any time.</p>
+        <h2><span class="sec-no">&sect;</span> Invoices from statements</h2>
+        <p>Every imported royalty statement appears here. Issue a net invoice (no VAT, §19) to the label with one click. Edit your own letterhead details under the <b>gear</b> tab.</p>
+      </div>
+      <div class="panel empty-state hidden" id="invEmpty">
+        No statements yet. Import a royalty statement in the <b>Royalties</b> tab — it will show up here ready to invoice.
+      </div>
+      <div id="invList"></div>
+    </section>
+  </div>
+
+  <div class="tab-panel" id="tab-settings" hidden>
+    <section class="section">
+      <div class="sec-head">
+        <h2><span class="sec-no">&#9881;</span> Your details</h2>
+        <p>Your letterhead for every invoice — company, address, bank and tax details. Stored in this browser; you rarely need to touch this.</p>
       </div>
       <div class="panel issuer-panel">
         <form id="issuerForm" onsubmit="return false">
@@ -373,17 +391,6 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
           <label>Sign-off (after "Kind Regards,")<input type="text" id="isSign"></label>
         </form>
       </div>
-    </section>
-
-    <section class="section">
-      <div class="sec-head">
-        <h2><span class="sec-no">2</span> Invoices from statements</h2>
-        <p>Every imported royalty statement appears here. Issue a net invoice (no VAT, §19) to the label with one click.</p>
-      </div>
-      <div class="panel empty-state hidden" id="invEmpty">
-        No statements yet. Import a royalty statement in the <b>Royalties</b> tab — it will show up here ready to invoice.
-      </div>
-      <div id="invList"></div>
     </section>
   </div>
 
@@ -1099,8 +1106,10 @@ function switchTab(name){
   document.getElementById("tab-analytics").hidden = name!=="analytics";
   document.getElementById("tab-royalties").hidden = name!=="royalties";
   document.getElementById("tab-invoices").hidden = name!=="invoices";
+  document.getElementById("tab-settings").hidden = name!=="settings";
   if(name==="royalties") renderRoyalties();
   if(name==="invoices") renderInvoices();
+  if(name==="settings") renderSettings();
 }
 
 
@@ -1132,16 +1141,23 @@ function captureStatement(p, label, year, half){
 }
 function removeStatement(id){ statements=statements.filter(s=>s.id!==id); renderInvoices(); }
 
-/* ---- issuer settings + statements list ---- */
-function renderInvoices(){
+/* ---- issuer settings (gear tab) ---- */
+function renderSettings(){
   const set=document.getElementById("issuerForm");
   if(set && !set.dataset.bound){
     set.dataset.bound="1";
     [["isName","name"],["isAddr","addr"],["isIban","iban"],["isBic","bic"],["isTax","taxNo"],["isPlace","place"],["isSign","signoff"]].forEach(([id,key])=>{
-      const el=document.getElementById(id); if(!el) return; el.value=issuer[key]||"";
+      const el=document.getElementById(id); if(!el) return;
       el.oninput=()=>{ issuer[key]=el.value; saveState(); };
     });
   }
+  [["isName","name"],["isAddr","addr"],["isIban","iban"],["isBic","bic"],["isTax","taxNo"],["isPlace","place"],["isSign","signoff"]].forEach(([id,key])=>{
+    const el=document.getElementById(id); if(el) el.value=issuer[key]||"";   // reflect current values each open
+  });
+}
+
+/* ---- statements list (invoices tab) ---- */
+function renderInvoices(){
   const empty=statements.length===0;
   document.getElementById("invEmpty").classList.toggle("hidden",!empty);
   const list=document.getElementById("invList");
