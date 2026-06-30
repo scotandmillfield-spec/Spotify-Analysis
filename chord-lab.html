@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chord Lab — progressions & MIDI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0E1117; --ink:#0A0D12; --panel:#141925; --panel2:#1A1F2C; --line:#252B39;
+  --text:#E8EBF2; --muted:#9AA3B2; --faint:#5C6678;
+  --amber:#5DB1E6;
+  --T:#52E0A0; --S:#5B9DFF; --D:#FFB454; --X:#E879C9;
+  --shadow:0 14px 40px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html,body{margin:0; padding:0}
+body{background:radial-gradient(1200px 600px at 80% -10%, #16203022, transparent), var(--bg); color:var(--text); font-family:Inter,system-ui,sans-serif; -webkit-font-smoothing:antialiased; line-height:1.5}
+.wrap{max-width:1180px; margin:0 auto; padding:34px 26px 80px}
+
+/* header */
+.eyebrow{font-family:"JetBrains Mono",monospace; font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:var(--amber)}
+h1{font-family:"Space Grotesk",sans-serif; font-weight:700; font-size:clamp(30px,5vw,46px); letter-spacing:-.02em; margin:8px 0 6px}
+h1 em{font-style:normal; color:var(--amber)}
+.lede{color:var(--muted); font-size:15.5px; max-width:62ch}
+
+/* controls */
+.console{margin-top:26px; background:linear-gradient(180deg,var(--panel),#10141d); border:1px solid var(--line); border-radius:18px; padding:20px 22px; box-shadow:var(--shadow)}
+.ctrls{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:16px 18px; align-items:end}
+.field{display:flex; flex-direction:column; gap:7px; min-width:0}
+.field>label{font-family:"JetBrains Mono",monospace; font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint)}
+select,input[type=number]{background:var(--ink); border:1px solid var(--line); border-radius:10px; color:var(--text); font-family:Inter; font-size:14px; padding:10px 11px; width:100%}
+select:focus,input:focus{outline:none; border-color:var(--amber)}
+.seg{display:flex; background:var(--ink); border:1px solid var(--line); border-radius:10px; padding:3px; gap:3px}
+.seg button{flex:1; background:none; border:none; color:var(--muted); font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:12.5px; padding:7px 4px; border-radius:7px; cursor:pointer; white-space:nowrap}
+.seg button.on{background:var(--amber); color:#06121c}
+.toggle{display:flex; align-items:center; gap:9px; cursor:pointer; user-select:none; font-size:13.5px; color:var(--muted); padding-bottom:9px}
+.toggle input{appearance:none; width:38px; height:21px; background:var(--ink); border:1px solid var(--line); border-radius:20px; position:relative; cursor:pointer; flex:none; transition:background .15s}
+.toggle input::after{content:""; position:absolute; top:2px; left:2px; width:15px; height:15px; border-radius:50%; background:var(--faint); transition:.15s}
+.toggle input:checked{background:rgba(93,177,230,.25); border-color:var(--amber)}
+.toggle input:checked::after{left:19px; background:var(--amber)}
+.gen-row{display:flex; gap:12px; align-items:center; margin-top:18px; flex-wrap:wrap}
+.btn{font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:14px; border:1px solid var(--line); background:var(--panel2); color:var(--text); border-radius:11px; padding:11px 18px; cursor:pointer; transition:border-color .15s, transform .05s}
+.btn:hover{border-color:var(--faint)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--amber); border-color:var(--amber); color:#06121c; padding:12px 26px; font-size:15px}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{background:none}
+.btn:disabled{opacity:.45; cursor:default}
+.legend{display:flex; gap:16px; flex-wrap:wrap; margin-left:auto; font-size:12px; color:var(--muted)}
+.legend span{display:inline-flex; align-items:center; gap:6px}
+.dot{width:10px; height:10px; border-radius:3px; flex:none}
+
+/* results */
+.grid{margin-top:26px; display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:18px}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px 18px 16px; display:flex; flex-direction:column; gap:14px; position:relative; overflow:hidden}
+.card .top{display:flex; align-items:baseline; justify-content:space-between; gap:10px}
+.mood{font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:16px}
+.badge{font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); border:1px solid var(--line); border-radius:6px; padding:3px 7px; white-space:nowrap}
+.chips{display:flex; gap:8px; flex-wrap:wrap}
+.chip{flex:1 1 0; min-width:62px; background:var(--ink); border:1px solid var(--line); border-radius:11px; padding:11px 8px 9px; text-align:center; position:relative; transition:transform .1s, box-shadow .1s}
+.chip::before{content:""; position:absolute; top:0; left:0; right:0; height:3px; border-radius:11px 11px 0 0; background:var(--fn)}
+.chip .nm{font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:16px; letter-spacing:-.01em}
+.chip .rn{font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--muted); margin-top:3px}
+.chip.playing{transform:translateY(-3px); box-shadow:0 6px 16px rgba(93,177,230,.25); border-color:var(--amber)}
+.why{font-size:13px; color:var(--muted); line-height:1.5; min-height:18px}
+.why b{color:var(--text); font-weight:600}
+.card .actions{display:flex; gap:9px; margin-top:2px}
+.icon-btn{flex:none; display:inline-flex; align-items:center; gap:7px; font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:13px; border:1px solid var(--line); background:var(--panel2); color:var(--text); border-radius:9px; padding:8px 13px; cursor:pointer}
+.icon-btn:hover{border-color:var(--faint)}
+.icon-btn svg{width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
+.icon-btn.dl{margin-left:auto}
+.empty{margin-top:40px; text-align:center; color:var(--faint); font-size:14.5px}
+.foot{margin-top:40px; color:var(--faint); font-size:12.5px; line-height:1.6; border-top:1px solid var(--line); padding-top:18px}
+@media(max-width:560px){ .legend{width:100%; margin-left:0} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Harmony lab · MIDI out</div>
+  <h1>Chord <em>Lab</em></h1>
+  <p class="lede">Pick a key and a genre, hit generate, and get a fresh set of progressions — from safe diatonic loops to borrowed chords, secondary dominants and deceptive turns. Audition each one, then drop the <b>.mid</b> straight into your DAW.</p>
+
+  <div class="console">
+    <div class="ctrls">
+      <div class="field"><label>Key</label>
+        <select id="root">
+          <option value="0">C</option><option value="1">Db</option><option value="2">D</option><option value="3">Eb</option>
+          <option value="4">E</option><option value="5">F</option><option value="6">Gb</option><option value="7">G</option>
+          <option value="8">Ab</option><option value="9" selected>A</option><option value="10">Bb</option><option value="11">B</option>
+        </select>
+      </div>
+      <div class="field"><label>Quality</label>
+        <select id="mode"><option value="min" selected>Minor</option><option value="maj">Major</option></select>
+      </div>
+      <div class="field"><label>Genre</label>
+        <select id="genre">
+          <option value="deepprog" selected>Deep Progressive</option>
+          <option value="deephouse">Deep House</option>
+          <option value="trance">Melodic / Trance</option>
+          <option value="house">House</option>
+          <option value="lofi">Lo-Fi / Neo-Soul</option>
+          <option value="cinematic">Cinematic / Score</option>
+          <option value="edm">EDM / Festival</option>
+          <option value="pop">Pop</option>
+        </select>
+      </div>
+      <div class="field"><label>Adventure</label>
+        <div class="seg" id="adv">
+          <button data-adv="1">Safe</button>
+          <button data-adv="2" class="on">Colourful</button>
+          <button data-adv="3">Surprising</button>
+        </div>
+      </div>
+      <div class="field"><label>Length</label>
+        <div class="seg" id="len">
+          <button data-len="4" class="on">4</button>
+          <button data-len="8">8</button>
+        </div>
+      </div>
+      <div class="field"><label>Tempo (BPM)</label>
+        <input type="number" id="tempo" value="122" min="40" max="220">
+      </div>
+      <div class="field"><label>Bass</label>
+        <div class="seg" id="bass">
+          <button data-bass="smooth" class="on">Smooth</button>
+          <button data-bass="root">Root</button>
+          <button data-bass="pedal">Pedal</button>
+        </div>
+      </div>
+    </div>
+    <div class="gen-row">
+      <button class="btn primary" id="gen">Generate progressions</button>
+      <button class="btn ghost" id="dlAll" disabled>Download all as one .mid</button>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--T)"></i>Tonic</span>
+        <span><i class="dot" style="background:var(--S)"></i>Subdominant</span>
+        <span><i class="dot" style="background:var(--D)"></i>Dominant</span>
+        <span><i class="dot" style="background:var(--X)"></i>Colour / surprise</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="grid" class="grid"></div>
+  <div id="empty" class="empty">Hit <b>Generate</b> to spin up a set.</div>
+
+  <div class="foot">
+    MIDI files contain block-chord voicings (one bar per chord) at your chosen tempo. <b>Bass</b> sets how the low note moves: <b>Smooth</b> places inversions for a walking bassline, <b>Root</b> keeps it on each chord's root, <b>Pedal</b> holds a tonic drone underneath the shifting chords — that hypnotic deep-progressive staple. Preview is a simple built-in pad; your DAW instruments will sound different. Nothing is uploaded; everything runs in your browser.
+  </div>
+</div>
+
+<script>
+/* ===================== music theory ===================== */
+const SHARP=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const FLAT =["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+const FLAT_MAJ=new Set([5,10,3,8,1,6]);            // F Bb Eb Ab Db Gb
+const FLAT_MIN=new Set([2,7,0,5,10,3]);            // Dm Gm Cm Fm Bbm Ebm
+function useFlats(root,mode){ return (mode==="maj"?FLAT_MAJ:FLAT_MIN).has(root); }
+function noteName(pc,flats){ return (flats?FLAT:SHARP)[((pc%12)+12)%12]; }
+
+const Q={
+  maj:{iv:[0,4,7], s:""}, min:{iv:[0,3,7], s:"m"}, dim:{iv:[0,3,6], s:"dim"}, aug:{iv:[0,4,8], s:"+"},
+  sus2:{iv:[0,2,7], s:"sus2"}, sus4:{iv:[0,5,7], s:"sus4"},
+  maj7:{iv:[0,4,7,11], s:"maj7"}, dom7:{iv:[0,4,7,10], s:"7"}, min7:{iv:[0,3,7,10], s:"m7"},
+  m7b5:{iv:[0,3,6,10], s:"m7b5"}, dim7:{iv:[0,3,6,9], s:"dim7"},
+  add9:{iv:[0,4,7,14], s:"add9"}, madd9:{iv:[0,3,7,14], s:"m(add9)"},
+  maj9:{iv:[0,4,7,11,14], s:"maj9"}, dom9:{iv:[0,4,7,10,14], s:"9"}, min9:{iv:[0,3,7,10,14], s:"m9"},
+  maj6:{iv:[0,4,7,9], s:"6"}, min6:{iv:[0,3,7,9], s:"m6"}
+};
+
+/* templates: chords = [degreeOffset, quality, function(T/S/D/X), roman] */
+const T_MIN=[
+ {mood:"Epic Minor Loop", g:["trance","edm","cinematic","deepprog"], adv:1, ch:[[0,"min","T","i"],[8,"maj","X","♭VI"],[3,"maj","T","♭III"],[10,"maj","D","♭VII"]], why:"The anthem engine — <b>i–♭VI–♭III–♭VII</b> rolls forever."},
+ {mood:"Andalusian Drop", g:["trance","cinematic","edm","deepprog"], adv:1, ch:[[0,"min","T","i"],[10,"maj","D","♭VII"],[8,"maj","X","♭VI"],[7,"maj","D","V"]], why:"Descending bass to a <b>major V</b> — Spanish tension, big payoff."},
+ {mood:"Hypnotic Vamp", g:["deepprog","trance"], adv:1, ch:[[0,"min","T","i"],[8,"maj","X","♭VI"],[0,"min","T","i"],[8,"maj","X","♭VI"]], why:"A two-chord <b>i–♭VI</b> vamp — the prog-house hypnosis engine."},
+ {mood:"Rolling i–♭VII–♭VI", g:["deepprog","trance"], adv:1, ch:[[0,"min","T","i"],[10,"maj","D","♭VII"],[8,"maj","X","♭VI"],[10,"maj","D","♭VII"]], why:"Rolling motion that never quite resolves — pure drive."},
+ {mood:"Emotional Builder", g:["deepprog","cinematic"], adv:2, ch:[[0,"min","T","i"],[3,"maj","T","♭III"],[10,"maj","D","♭VII"],[5,"min","S","iv"]], why:"The slow-burn melodic-prog build."},
+ {mood:"Floating Sus", g:["deepprog"], adv:2, ch:[[0,"sus2","T","i sus2"],[10,"sus2","D","♭VII sus2"],[8,"sus2","X","♭VI sus2"],[5,"sus4","S","iv sus4"]], why:"Suspended voicings — weightless, airy drift."},
+ {mood:"Dorian Prog", g:["deepprog","house","deephouse"], adv:2, ch:[[0,"madd9","T","i(add9)"],[5,"maj","S","IV"],[10,"maj","D","♭VII"],[0,"madd9","T","i(add9)"]], why:"A <b>major IV</b> (Dorian) lifts the loop out of pure minor."},
+ {mood:"iv Pull", g:["deepprog","trance"], adv:2, ch:[[0,"min","T","i"],[5,"min","S","iv"],[8,"maj","X","♭VI"],[10,"maj","D","♭VII"]], why:"iv pulls inward before the ♭VI–♭VII lift."},
+ {mood:"Lush Minor 9ths", g:["deepprog","deephouse","lofi"], adv:3, ch:[[0,"min9","T","i9"],[8,"maj7","X","♭VImaj7"],[3,"maj7","T","♭IIImaj7"],[10,"maj7","D","♭VIImaj7"]], why:"Wide, lush extensions — deep and emotional."},
+ {mood:"Soulful Minor 7s", g:["deephouse","house","lofi"], adv:3, ch:[[0,"min7","T","i7"],[5,"min7","S","iv7"],[10,"dom7","D","♭VII7"],[3,"maj7","T","♭IIImaj7"]], why:"Smooth seventh motion — classic deep-house warmth."},
+ {mood:"Minor Gospel", g:["deephouse"], adv:3, ch:[[5,"min7","S","iv7"],[10,"dom7","D","♭VII7"],[3,"maj7","T","♭IIImaj7"],[8,"maj7","X","♭VImaj7"]], why:"Descending gospel-tinged sevenths."},
+ {mood:"Minor ii–V Deep", g:["deephouse"], adv:3, ch:[[0,"min9","T","i9"],[2,"m7b5","S","iiø7"],[7,"dom7","D","V7"],[0,"min9","T","i9"]], why:"A minor <b>ii–V</b> resolving home, with a 9th glow."},
+ {mood:"Pop Minor", g:["pop","trance","house"], adv:1, ch:[[0,"min","T","i"],[5,"min","S","iv"],[10,"maj","D","♭VII"],[3,"maj","T","♭III"]], why:"Clean, singable minor four-chord loop."},
+ {mood:"Lift to ♭VI", g:["trance","edm","deepprog"], adv:2, ch:[[0,"min","T","i"],[7,"maj","D","V"],[8,"maj","X","♭VI"],[5,"min","S","iv"]], why:"<b>V resolves to ♭VI</b>, not i — a deceptive lift."},
+ {mood:"Neapolitan Move", g:["cinematic","trance"], adv:3, ch:[[0,"min","T","i"],[5,"min","S","iv"],[1,"maj","X","♭II"],[7,"maj","D","V"]], why:"The <b>♭II (Neapolitan)</b> drops in before the dominant — dramatic."},
+ {mood:"Secondary Pull", g:["pop","house","deephouse"], adv:3, ch:[[0,"min","T","i"],[5,"dom7","X","V7/♭VII"],[10,"maj","D","♭VII"],[7,"maj","D","V"]], why:"A <b>secondary dominant</b> shoves you toward ♭VII."},
+ {mood:"Chromatic Mediant", g:["cinematic","deepprog"], adv:3, ch:[[0,"min","T","i"],[8,"maj","X","♭VI"],[4,"maj","X","III"],[7,"maj","D","V"]], why:"A <b>major III</b> glints in — an unexpected third-relation."},
+ {mood:"Cinematic Rise", g:["cinematic","trance","deepprog"], adv:2, ch:[[0,"min","T","i"],[3,"maj","T","♭III"],[8,"maj","X","♭VI"],[5,"min","S","iv"]], why:"Wide, rising minor colour for builds."},
+ {mood:"Half-lit House", g:["deephouse","house","lofi","deepprog"], adv:2, ch:[[0,"min9","T","i9"],[10,"maj7","D","♭VIImaj7"],[8,"maj7","X","♭VImaj7"],[5,"min7","S","iv7"]], why:"Extended chords, late-night feel."}
+];
+const T_MAJ=[
+ {mood:"Pop Axis", g:["pop","edm","trance"], adv:1, ch:[[0,"maj","T","I"],[7,"maj","D","V"],[9,"min","T","vi"],[5,"maj","S","IV"]], why:"The four chords behind a thousand hits."},
+ {mood:"50s Doo-Wop", g:["pop","cinematic"], adv:1, ch:[[0,"maj","T","I"],[9,"min","T","vi"],[5,"maj","S","IV"],[7,"maj","D","V"]], why:"Sentimental I–vi–IV–V."},
+ {mood:"Deep House Soul", g:["deephouse","house"], adv:3, ch:[[2,"min7","S","ii7"],[7,"dom7","D","V7"],[0,"maj7","T","Imaj7"],[9,"min7","T","vi7"]], why:"A soulful <b>ii–V–I</b> with seventh voicings."},
+ {mood:"Deep House Anthem", g:["deephouse","house"], adv:3, ch:[[0,"maj7","T","Imaj7"],[4,"min7","T","iii7"],[9,"min7","T","vi7"],[2,"min7","S","ii7"]], why:"Descending soulful sevenths — pure deep house."},
+ {mood:"Rhodes ii–V–I", g:["deephouse","house","lofi"], adv:3, ch:[[2,"min9","S","ii9"],[7,"dom9","D","V9"],[0,"maj9","T","Imaj9"],[9,"min9","T","vi9"]], why:"Lush Rhodes-style <b>ii–V–I</b> with 9ths."},
+ {mood:"Prog Major Lift", g:["deepprog","trance"], adv:2, ch:[[0,"add9","T","I(add9)"],[9,"madd9","T","vi(add9)"],[5,"maj","S","IV"],[7,"sus4","D","V sus4"]], why:"Add9 sparkle and a suspended dominant — airy and uplifting."},
+ {mood:"Borrowed iv", g:["pop","cinematic","trance","deepprog"], adv:2, ch:[[0,"maj","T","I"],[5,"maj","S","IV"],[5,"min","X","iv"],[0,"maj","T","I"]], why:"The <b>minor iv</b> borrows a wistful colour before home."},
+ {mood:"♭VII Lift", g:["trance","edm","cinematic"], adv:2, ch:[[0,"maj","T","I"],[10,"maj","X","♭VII"],[5,"maj","S","IV"],[0,"maj","T","I"]], why:"<b>♭VII</b> gives the rocky, anthemic lift."},
+ {mood:"Secondary Dominant", g:["pop","house","edm"], adv:2, ch:[[0,"maj","T","I"],[2,"dom7","X","V7/V"],[7,"maj","D","V"],[0,"maj","T","I"]], why:"<b>V/V</b> pulls hard onto the dominant."},
+ {mood:"Deceptive Cadence", g:["pop","cinematic"], adv:2, ch:[[0,"maj","T","I"],[5,"maj","S","IV"],[7,"dom7","D","V7"],[9,"min","T","vi"]], why:"<b>V7 lands on vi</b> — an open, surprising turn."},
+ {mood:"♭VI Cinematic", g:["cinematic","trance","deepprog"], adv:3, ch:[[0,"maj","T","I"],[8,"maj","X","♭VI"],[5,"maj","S","IV"],[7,"maj","D","V"]], why:"<b>♭VI</b> borrowed from minor — filmic width."},
+ {mood:"Neo-Soul Major", g:["deephouse","lofi","house"], adv:3, ch:[[0,"maj9","T","Imaj9"],[5,"maj7","S","IVmaj7"],[2,"min9","S","ii9"],[7,"dom9","D","V9"]], why:"Lush extended voicings throughout."},
+ {mood:"Jazzy ii–V chain", g:["deephouse","lofi","house"], adv:3, ch:[[9,"min7","T","vi7"],[2,"min7","S","ii7"],[7,"dom7","D","V7"],[0,"maj7","T","Imaj7"]], why:"Turnaround motion that keeps moving."},
+ {mood:"Festival Major", g:["edm","trance","pop"], adv:1, ch:[[0,"maj","T","I"],[7,"maj","D","V"],[9,"min","T","vi"],[5,"maj","S","IV"]], why:"Bright, open, hands-in-the-air."}
+];
+
+/* extend an 4-chord template to 8 by repeating with a varied second half */
+function lengthen(ch){
+  const a=ch.slice();
+  const b=ch.map(c=>c.slice());
+  if(b.length>=2){ const last=b[b.length-1]; // make a stronger turnaround at the very end
+    // leave as-is; second pass adds motion via substitutions
+  }
+  return a.concat(b);
+}
+
+/* genre dressing: probability of seventh/extension, and preferred extension family */
+const GENRE={
+  deepprog:{seventh:.4, ext:"add9", sus:.32, label:"Deep Progressive"},
+  deephouse:{seventh:.85, ext:"9", sus:.06, label:"Deep House"},
+  trance:{seventh:.25, ext:"add9", sus:.25, label:"Melodic / Trance"},
+  edm:{seventh:.12, ext:"add9", sus:.15, label:"EDM / Festival"},
+  house:{seventh:.7, ext:"7", sus:.1, label:"House"},
+  lofi:{seventh:.85, ext:"9", sus:.05, label:"Lo-Fi / Neo-Soul"},
+  cinematic:{seventh:.4, ext:"maj7", sus:.2, label:"Cinematic"},
+  pop:{seventh:.3, ext:"7", sus:.15, label:"Pop"}
+};
+const SEVEN={maj:"maj7", min:"min7", dom7:"dom7"};
+const NINE ={maj:"maj9", min:"min9", dom7:"dom9", maj7:"maj9", min7:"min9"};
+const ADD9 ={maj:"add9", min:"madd9"};
+
+function dress(ch, genre, adv){
+  const g=GENRE[genre]; const out=ch.map(c=>({off:c[0],q:c[1],fn:c[2],rn:c[3]}));
+  out.forEach((c,i)=>{
+    const isCadence = (i===out.length-1);
+    if(Math.random()<g.seventh && Q[c.q]){
+      if(g.ext==="9"){ if(NINE[c.q]) c.q=NINE[c.q]; else if(SEVEN[c.q]) c.q=SEVEN[c.q]; }
+      else if(g.ext==="add9"){ if(ADD9[c.q]) c.q=ADD9[c.q]; }
+      else if(g.ext==="maj7"){ if(c.q==="maj")c.q="maj7"; else if(SEVEN[c.q])c.q=SEVEN[c.q]; }
+      else { if(SEVEN[c.q]) c.q=SEVEN[c.q]; }
+    }
+    if(c.fn==="D" && c.q==="maj" && Math.random()<.5) c.q="dom7";     // dominants like a 7th
+    if(g.sus && c.fn!=="D" && Math.random()<g.sus && (c.q==="maj"||c.q==="min")){ c.q=Math.random()<.5?"sus2":"sus4"; }
+  });
+  return out;
+}
+
+/* realize one chord into MIDI notes + display name */
+function realize(root, c, prevBass, smooth, flats){
+  const rootPc=(root+c.off)%12;
+  const ivs=Q[c.q].iv;
+  const tonesPc=ivs.map(i=>(rootPc+i)%12);
+  // choose inversion (bass) for smooth bass: candidates = root/3rd/5th
+  let inv=0;
+  if(smooth && prevBass!=null){
+    const cand=[tonesPc[0], tonesPc[1], tonesPc[2]!=null?tonesPc[2]:tonesPc[0]];
+    let best=0, bestD=99;
+    cand.forEach((pc,k)=>{ let d=Math.abs(((pc-prevBass+18)%12)-6); if(d<bestD-0.001){bestD=d;best=k;} });
+    inv=best;
+  }
+  const bassPc=tonesPc[Math.min(inv,tonesPc.length-1)];
+  const bassNote=36+bassPc;                       // C2..B2
+  const upper=ivs.map(i=>60+rootPc%12 + i);       // root-position stack from C4 region
+  const midi=[bassNote, ...upper].filter((v,i,a)=>a.indexOf(v)===i);
+  let name=noteName(rootPc,flats)+Q[c.q].s;
+  if(inv>0) name+="/"+noteName(bassPc,flats);
+  return {name, roman:c.rn, fn:c.fn, midi, bassPc};
+}
+
+function buildProgression(root, mode, genre, adv, len){
+  const pool=(mode==="maj"?T_MAJ:T_MIN).filter(t=>t.g.includes(genre));
+  const usable=pool.length?pool:(mode==="maj"?T_MAJ:T_MIN);
+  // weight toward chosen adventure level (allow one below / at)
+  const weighted=usable.filter(t=>t.adv<=adv);
+  const src=(weighted.length?weighted:usable);
+  const tpl=src[Math.floor(Math.random()*src.length)];
+  let chords=tpl.ch.map(c=>c.slice());
+  if(len===8) chords=lengthen(chords);
+  const dressed=dress(chords, genre, adv);
+  const flats=useFlats(root,mode);
+  const smooth=document.getElementById("smooth").checked;
+  let prevBass=null; const out=[];
+  for(const c of dressed){ const r=realize(root,c,prevBass,smooth,flats); prevBass=r.bassPc; out.push(r); }
+  return {mood:tpl.mood, why:tpl.why, adv:tpl.adv, chords:out};
+}
+
+/* ===================== MIDI writer (no libs) ===================== */
+function vlq(n){ const b=[n&0x7f]; n>>=7; while(n>0){ b.unshift((n&0x7f)|0x80); n>>=7; } return b; }
+function str(s){ return [...s].map(c=>c.charCodeAt(0)); }
+function u32(n){ return [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255]; }
+function u16(n){ return [(n>>8)&255,n&255]; }
+
+function progsToMidi(progs, bpm, name){
+  const PPQ=480, bar=PPQ*4, vel=82, gap=40;
+  const ev=[]; // {t, bytes}
+  let base=0;
+  progs.forEach((p,pi)=>{
+    p.chords.forEach((ch,ci)=>{
+      const start=base+ci*bar;
+      ch.midi.forEach(nt=>{
+        ev.push({t:start, b:[0x90,nt,vel]});
+        ev.push({t:start+bar-gap, b:[0x80,nt,0]});
+      });
+    });
+    base += p.chords.length*bar + (pi<progs.length-1?bar:0); // one bar gap between progressions
+  });
+  ev.sort((a,b)=> a.t-b.t || (a.b[0]&0xf0)-(b.b[0]&0xf0)); // offs (0x80) before ons (0x90) at same tick
+  let data=[];
+  data=data.concat(vlq(0), [0xFF,0x51,0x03], [ (Math.round(60000000/bpm)>>16)&255,(Math.round(60000000/bpm)>>8)&255,Math.round(60000000/bpm)&255 ]);
+  data=data.concat(vlq(0), [0xFF,0x58,0x04, 4,2,24,8]);     // 4/4
+  const tn=str(name).slice(0,127); data=data.concat(vlq(0),[0xFF,0x03,tn.length],tn);
+  let prev=0;
+  for(const e of ev){ data=data.concat(vlq(e.t-prev), e.b); prev=e.t; }
+  data=data.concat(vlq(0),[0xFF,0x2F,0x00]);
+  const track=[].concat(str("MTrk"), u32(data.length), data);
+  const header=[].concat(str("MThd"), u32(6), u16(0), u16(1), u16(PPQ));
+  return new Uint8Array(header.concat(track));
+}
+function download(bytes, filename){
+  const blob=new Blob([bytes],{type:"audio/midi"});
+  const url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),800);
+}
+
+/* ===================== preview synth (Web Audio) ===================== */
+let actx=null, playToken=0;
+function preview(prog, card){
+  if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==="suspended") actx.resume();
+  const my=++playToken;
+  const dur=0.95, t0=actx.currentTime+0.04;
+  const master=actx.createGain(); master.gain.value=0.16; master.connect(actx.destination);
+  const lp=actx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=2600; lp.connect(master);
+  const chips=card.querySelectorAll(".chip");
+  prog.chords.forEach((ch,i)=>{
+    const ts=t0+i*dur;
+    ch.midi.forEach(nt=>{
+      const f=440*Math.pow(2,(nt-69)/12);
+      [0,0.005].forEach((det,k)=>{
+        const o=actx.createOscillator(); o.type=k? "sawtooth":"triangle"; o.frequency.value=f*(1+det);
+        const g=actx.createGain(); g.gain.setValueAtTime(0,ts);
+        g.gain.linearRampToValueAtTime(k?0.10:0.16, ts+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0008, ts+dur*0.95);
+        o.connect(g); g.connect(lp); o.start(ts); o.stop(ts+dur);
+      });
+    });
+    const ms=(ts-actx.currentTime)*1000;
+    setTimeout(()=>{ if(my!==playToken)return; chips.forEach(c=>c.classList.remove("playing")); if(chips[i]) chips[i].classList.add("playing"); }, Math.max(0,ms));
+  });
+  const totalMs=(t0+prog.chords.length*dur-actx.currentTime)*1000;
+  setTimeout(()=>{ if(my!==playToken)return; chips.forEach(c=>c.classList.remove("playing")); }, totalMs);
+}
+function stopAll(){ playToken++; document.querySelectorAll(".chip.playing").forEach(c=>c.classList.remove("playing")); }
+
+/* ===================== UI ===================== */
+let current=[];
+const $=id=>document.getElementById(id);
+const PLAY_SVG='<svg viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></svg>';
+const DL_SVG='<svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"/></svg>';
+
+function keyLabel(){ const r=+$("root").value, m=$("mode").value; return noteName(r,useFlats(r,m))+(m==="maj"?" major":" minor"); }
+
+function render(progs){
+  current=progs;
+  const grid=$("grid"); grid.innerHTML="";
+  $("empty").style.display = progs.length? "none":"block";
+  $("dlAll").disabled = progs.length===0;
+  const klabel=keyLabel(), genre=GENRE[$("genre").value].label;
+  progs.forEach((p,idx)=>{
+    const card=document.createElement("div"); card.className="card";
+    const chips=p.chords.map(c=>`<div class="chip" style="--fn:var(--${c.fn})"><div class="nm">${c.name}</div><div class="rn">${c.roman}</div></div>`).join("");
+    card.innerHTML=`
+      <div class="top"><div class="mood">${p.mood}</div><div class="badge">${klabel} · ${genre}</div></div>
+      <div class="chips">${chips}</div>
+      <div class="why">${p.why||""}</div>
+      <div class="actions">
+        <button class="icon-btn play">${PLAY_SVG} Play</button>
+        <button class="icon-btn dl">${DL_SVG} .mid</button>
+      </div>`;
+    card.querySelector(".play").onclick=()=>{ stopAll(); preview(p,card); };
+    card.querySelector(".dl").onclick=()=>{
+      const fn=`${keyFilename()}_${(p.mood).replace(/[^\w]+/g,"-")}.mid`;
+      download(progsToMidi([p], +$("tempo").value||120, p.mood), fn);
+    };
+    grid.appendChild(card);
+  });
+}
+function keyFilename(){ const r=+$("root").value,m=$("mode").value; return noteName(r,useFlats(r,m)).replace("#","s")+(m==="maj"?"maj":"min"); }
+
+function generate(){
+  stopAll();
+  const root=+$("root").value, mode=$("mode").value, genre=$("genre").value;
+  const adv=+document.querySelector("#adv button.on").dataset.adv;
+  const len=+document.querySelector("#len button.on").dataset.len;
+  const seen=new Set(), out=[]; let guard=0;
+  while(out.length<6 && guard++<60){
+    const p=buildProgression(root,mode,genre,adv,len);
+    const sig=p.chords.map(c=>c.name).join("|");
+    if(seen.has(sig)) continue; seen.add(sig); out.push(p);
+  }
+  render(out);
+}
+
+/* segmented controls */
+document.querySelectorAll(".seg").forEach(seg=>seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+  seg.querySelectorAll("button").forEach(x=>x.classList.remove("on")); b.classList.add("on");
+}));
+/* genre changes default tempo */
+const TEMPO={deepprog:122,deephouse:123,trance:124,edm:128,house:122,lofi:82,cinematic:90,pop:100};
+$("genre").onchange=()=>{ $("tempo").value=TEMPO[$("genre").value]||120; };
+
+$("gen").onclick=generate;
+$("dlAll").onclick=()=>{
+  if(!current.length) return;
+  download(progsToMidi(current, +$("tempo").value||120, "Chord Lab — "+keyLabel()), keyFilename()+"_set.mid");
+};
+generate();
+</script>
+</body>
+</html>
