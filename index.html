@@ -212,6 +212,16 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 .inv-meta{min-width:0}
 .inv-label{font-family:"Space Grotesk",sans-serif; font-size:15.5px; font-weight:600; color:var(--text)}
 .inv-sub{font-size:12.5px; color:var(--muted); margin-top:3px; font-family:"JetBrains Mono",monospace}
+.inv-actions{display:flex; align-items:center; gap:8px; flex:none; flex-wrap:wrap; justify-content:flex-end}
+.inv-row.done{opacity:.72}
+.inv-status{display:inline-flex; align-items:center; gap:6px; font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:13px; padding:7px 13px; border-radius:9px}
+.inv-status.paid{color:#52E0A0; background:rgba(82,224,160,.12); border:1px solid rgba(82,224,160,.4)}
+.inv-status.carry{color:#FFB454; background:rgba(255,180,84,.12); border:1px solid rgba(255,180,84,.4)}
+.inv-status .ic{width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round}
+.btn.mini{padding:8px 12px; font-size:12.5px; background:none}
+.btn.mini .ic{width:14px; height:14px; fill:none; stroke:#52E0A0; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; vertical-align:-2px; margin-right:5px}
+.link-btn{background:none; border:none; color:var(--faint); font-size:12.5px; cursor:pointer; text-decoration:underline; font-family:Inter; padding:4px}
+.link-btn:hover{color:var(--text)}
 .inv-form{display:flex; flex-direction:column; gap:13px}
 .if-grid{display:grid; grid-template-columns:1fr 1fr; gap:13px 16px}
 .inv-form label{display:flex; flex-direction:column; gap:5px; font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:var(--faint)}
@@ -809,7 +819,7 @@ function rebuildFromState(state){
       entries[k] = (v && typeof v==="object") ? {amount:+v.amount||0, label:v.label||null, currency:v.currency||"€"} : {amount:+v||0, label:null, currency:"€"}; });
     royaltyTracks.push({name:e.name, color:e.color||royPickColor(), entries});
   });
-  statements = Array.isArray(state.statements) ? state.statements : [];
+  statements = Array.isArray(state.statements) ? state.statements.map(s=>Object.assign({status:"open"},s)) : [];
   labelAddresses = (state.labelAddresses && typeof state.labelAddresses==="object") ? state.labelAddresses : {};
   issuer = Object.assign({}, ISSUER_DEFAULT, (state.issuer && typeof state.issuer==="object") ? state.issuer : {});
 }
@@ -1135,10 +1145,13 @@ function captureStatement(p, label, year, half){
   if(!label) return;
   const stmtNo=p.stmtNo||"";
   const id=normKey(label)+"|"+(stmtNo||(year+"-"+half));
-  const rec={id,label,stmtNo,year,half,periodStart:p.periodStart||"",periodEnd:p.periodEnd||"",payable:(p.payable!=null?p.payable:null),currency:p.currency||"€"};
+  const prev=statements.find(s=>s.id===id);
+  const rec={id,label,stmtNo,year,half,periodStart:p.periodStart||"",periodEnd:p.periodEnd||"",payable:(p.payable!=null?p.payable:null),currency:p.currency||"€",
+             status: prev?prev.status||"open":"open"};   // keep an existing paid/carry status on re-import
   const i=statements.findIndex(s=>s.id===id);
   if(i>=0) statements[i]=rec; else statements.push(rec);
 }
+function setStatementStatus(id, status){ const s=statements.find(x=>x.id===id); if(s){ s.status=status; renderInvoices(); } }
 function removeStatement(id){ statements=statements.filter(s=>s.id!==id); renderInvoices(); }
 
 /* ---- issuer settings (gear tab) ---- */
@@ -1157,19 +1170,32 @@ function renderSettings(){
 }
 
 /* ---- statements list (invoices tab) ---- */
+const CHECK_SVG='<svg class="ic" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>';
 function renderInvoices(){
   const empty=statements.length===0;
   document.getElementById("invEmpty").classList.toggle("hidden",!empty);
   const list=document.getElementById("invList");
-  list.innerHTML = empty ? "" : statements.slice().sort((a,b)=>(b.year-a.year)||b.half.localeCompare(a.half)).map(s=>`
-    <div class="inv-row">
-      <div class="inv-meta">
+  list.innerHTML = empty ? "" : statements.slice().sort((a,b)=>(b.year-a.year)||b.half.localeCompare(a.half)).map(s=>{
+    const st=s.status||"open";
+    const meta=`<div class="inv-meta">
         <div class="inv-label">${s.label}</div>
         <div class="inv-sub">${s.half} ${s.year}${s.stmtNo?(' · Statement '+s.stmtNo):''}${s.payable!=null?(' · '+invMoney(s.payable,s.currency)):''}</div>
-      </div>
-      <button class="btn amber" data-inv="${s.id}" type="button">Create invoice</button>
-    </div>`).join("");
+      </div>`;
+    let actions;
+    if(st==="paid")
+      actions=`<span class="inv-status paid">${CHECK_SVG} Paid</span><button class="link-btn" data-reopen="${s.id}" type="button">Reopen</button>`;
+    else if(st==="carry")
+      actions=`<span class="inv-status carry">Carryover</span><button class="link-btn" data-reopen="${s.id}" type="button">Reopen</button>`;
+    else
+      actions=`<button class="btn amber" data-inv="${s.id}" type="button">Create invoice</button>
+        <button class="btn mini" data-paid="${s.id}" type="button">${CHECK_SVG} Mark paid</button>
+        <button class="btn mini" data-carry="${s.id}" type="button">Carryover</button>`;
+    return `<div class="inv-row ${st!=="open"?"done":""}">${meta}<div class="inv-actions">${actions}</div></div>`;
+  }).join("");
   list.querySelectorAll("[data-inv]").forEach(b=>b.onclick=()=>openInvoiceEditor(b.dataset.inv));
+  list.querySelectorAll("[data-paid]").forEach(b=>b.onclick=()=>setStatementStatus(b.dataset.paid,"paid"));
+  list.querySelectorAll("[data-carry]").forEach(b=>b.onclick=()=>setStatementStatus(b.dataset.carry,"carry"));
+  list.querySelectorAll("[data-reopen]").forEach(b=>b.onclick=()=>setStatementStatus(b.dataset.reopen,"open"));
   saveState();
 }
 
