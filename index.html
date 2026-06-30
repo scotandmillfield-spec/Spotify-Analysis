@@ -222,6 +222,12 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 .btn.mini .ic{width:14px; height:14px; fill:none; stroke:#52E0A0; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; vertical-align:-2px; margin-right:5px}
 .link-btn{background:none; border:none; color:var(--faint); font-size:12.5px; cursor:pointer; text-decoration:underline; font-family:Inter; padding:4px}
 .link-btn:hover{color:var(--text)}
+.inv-filter{display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap}
+.fbtn{display:inline-flex; align-items:center; gap:8px; font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:13px; color:var(--muted); background:var(--panel); border:1px solid var(--line); border-radius:9px; padding:8px 13px; cursor:pointer}
+.fbtn:hover{border-color:var(--faint)}
+.fbtn.on{color:#06121c; background:var(--amber); border-color:var(--amber)}
+.fcount{font-family:"JetBrains Mono",monospace; font-size:11px; background:rgba(255,255,255,.08); border-radius:20px; padding:1px 7px; min-width:18px; text-align:center}
+.fbtn.on .fcount{background:rgba(0,0,0,.18)}
 .inv-form{display:flex; flex-direction:column; gap:13px}
 .if-grid{display:grid; grid-template-columns:1fr 1fr; gap:13px 16px}
 .inv-form label{display:flex; flex-direction:column; gap:5px; font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:var(--faint)}
@@ -380,6 +386,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <div class="panel empty-state hidden" id="invEmpty">
         No statements yet. Import a royalty statement in the <b>Royalties</b> tab — it will show up here ready to invoice.
       </div>
+      <div class="inv-filter" id="invFilter"></div>
       <div id="invList"></div>
     </section>
   </div>
@@ -1135,7 +1142,8 @@ const ISSUER_DEFAULT={
   signoff:"Daniel & Maik"
 };
 let issuer=Object.assign({},ISSUER_DEFAULT);
-let statements=[];            // {id,label,stmtNo,year,half,periodStart,periodEnd,payable,currency}
+let statements=[];            // {id,label,stmtNo,year,half,periodStart,periodEnd,payable,currency,status}
+let invFilter="all";          // all | open | paid | carry
 let labelAddresses={};        // normKey(label) -> multiline address string
 
 function invMoney(a,cur){ const n=(+a||0); return cur==="€" ? n.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})+"€" : (cur||"€")+n.toFixed(2); }
@@ -1172,10 +1180,20 @@ function renderSettings(){
 /* ---- statements list (invoices tab) ---- */
 const CHECK_SVG='<svg class="ic" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>';
 function renderInvoices(){
-  const empty=statements.length===0;
-  document.getElementById("invEmpty").classList.toggle("hidden",!empty);
-  const list=document.getElementById("invList");
-  list.innerHTML = empty ? "" : statements.slice().sort((a,b)=>(b.year-a.year)||b.half.localeCompare(a.half)).map(s=>{
+  const total=statements.length;
+  document.getElementById("invEmpty").classList.toggle("hidden", total>0);
+  const bar=document.getElementById("invFilter"), list=document.getElementById("invList");
+  if(total===0){ bar.innerHTML=""; list.innerHTML=""; saveState(); return; }
+  // status counts for the filter bar
+  const counts={all:total, open:0, paid:0, carry:0};
+  statements.forEach(s=>{ const st=s.status||"open"; counts[st]=(counts[st]||0)+1; });
+  const tabs=[["all","All"],["open","Open"],["paid","Paid"],["carry","Carryover"]];
+  bar.innerHTML=tabs.map(([k,lbl])=>`<button class="fbtn ${invFilter===k?"on":""}" data-filter="${k}" type="button">${lbl}<span class="fcount">${counts[k]||0}</span></button>`).join("");
+  bar.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{ invFilter=b.dataset.filter; renderInvoices(); });
+  const shown=statements.filter(s=>invFilter==="all"||(s.status||"open")===invFilter)
+                        .sort((a,b)=>(b.year-a.year)||b.half.localeCompare(a.half));
+  if(!shown.length){ list.innerHTML='<div class="panel empty-state">Nothing in this filter.</div>'; saveState(); return; }
+  list.innerHTML = shown.map(s=>{
     const st=s.status||"open";
     const meta=`<div class="inv-meta">
         <div class="inv-label">${s.label}</div>
