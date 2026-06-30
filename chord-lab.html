@@ -251,24 +251,24 @@ function dress(ch, genre, adv){
 }
 
 /* realize one chord into MIDI notes + display name */
-function realize(root, c, prevBass, smooth, flats){
+function realize(root, c, prevBass, bassMode, flats){
   const rootPc=(root+c.off)%12;
   const ivs=Q[c.q].iv;
   const tonesPc=ivs.map(i=>(rootPc+i)%12);
-  // choose inversion (bass) for smooth bass: candidates = root/3rd/5th
-  let inv=0;
-  if(smooth && prevBass!=null){
-    const cand=[tonesPc[0], tonesPc[1], tonesPc[2]!=null?tonesPc[2]:tonesPc[0]];
-    let best=0, bestD=99;
-    cand.forEach((pc,k)=>{ let d=Math.abs(((pc-prevBass+18)%12)-6); if(d<bestD-0.001){bestD=d;best=k;} });
-    inv=best;
+  let bassPc;
+  if(bassMode==="pedal"){ bassPc=root%12; }                       // tonic drone under shifting chords
+  else if(bassMode==="root" || prevBass==null){ bassPc=tonesPc[0]; }
+  else {                                                          // smooth: nearest of root/3rd/5th to previous bass
+    const cand=[tonesPc[0], tonesPc[1], (tonesPc[2]!=null?tonesPc[2]:tonesPc[0])];
+    let best=tonesPc[0], bestD=99;
+    cand.forEach(pc=>{ const d=Math.abs(((pc-prevBass+18)%12)-6); if(d<bestD-0.001){bestD=d;best=pc;} });
+    bassPc=best;
   }
-  const bassPc=tonesPc[Math.min(inv,tonesPc.length-1)];
   const bassNote=36+bassPc;                       // C2..B2
-  const upper=ivs.map(i=>60+rootPc%12 + i);       // root-position stack from C4 region
+  const upper=ivs.map(i=>60+(rootPc%12)+i);       // root-position stack from C4 region
   const midi=[bassNote, ...upper].filter((v,i,a)=>a.indexOf(v)===i);
   let name=noteName(rootPc,flats)+Q[c.q].s;
-  if(inv>0) name+="/"+noteName(bassPc,flats);
+  if(bassPc!==rootPc) name+="/"+noteName(bassPc,flats);          // slash chord when bass isn't the root
   return {name, roman:c.rn, fn:c.fn, midi, bassPc};
 }
 
@@ -283,9 +283,9 @@ function buildProgression(root, mode, genre, adv, len){
   if(len===8) chords=lengthen(chords);
   const dressed=dress(chords, genre, adv);
   const flats=useFlats(root,mode);
-  const smooth=document.getElementById("smooth").checked;
+  const bassMode=(document.querySelector("#bass button.on")||{dataset:{bass:"smooth"}}).dataset.bass;
   let prevBass=null; const out=[];
-  for(const c of dressed){ const r=realize(root,c,prevBass,smooth,flats); prevBass=r.bassPc; out.push(r); }
+  for(const c of dressed){ const r=realize(root,c,prevBass,bassMode,flats); prevBass=r.bassPc; out.push(r); }
   return {mood:tpl.mood, why:tpl.why, adv:tpl.adv, chords:out};
 }
 
