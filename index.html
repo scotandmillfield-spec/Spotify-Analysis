@@ -383,9 +383,6 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
         <h2><span class="sec-no">&sect;</span> Invoices from statements</h2>
         <p>Every imported royalty statement appears here. Issue a net invoice (no VAT, §19) to the label with one click. Edit your own letterhead details under the <b>gear</b> tab.</p>
       </div>
-      <div class="panel empty-state hidden" id="invEmpty">
-        No statements yet. Import a royalty statement in the <b>Royalties</b> tab — it will show up here ready to invoice.
-      </div>
       <div class="inv-filter" id="invFilter"></div>
       <div id="invList"></div>
     </section>
@@ -1181,7 +1178,6 @@ function renderSettings(){
 const CHECK_SVG='<svg class="ic" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>';
 function renderInvoices(){
   const total=statements.length;
-  document.getElementById("invEmpty").classList.toggle("hidden", total>0);
   const bar=document.getElementById("invFilter"), list=document.getElementById("invList");
   if(total===0){ bar.innerHTML=""; list.innerHTML=""; saveState(); return; }
   // status counts for the filter bar
