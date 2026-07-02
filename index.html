@@ -264,6 +264,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 .lock-ic{width:14px; height:14px; fill:none; stroke:var(--faint); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; vertical-align:-2px; margin-right:6px}
 .book-table .jact .link-btn{margin-right:6px}
 .data-actions{display:flex; gap:10px; flex-wrap:wrap}
+.inv-total-hint{margin:-2px 0 4px; font-size:13px; color:var(--muted)} .inv-total-hint b{color:var(--text); font-family:"JetBrains Mono",monospace}
 .data-note{margin-top:12px; font-size:12.5px; color:var(--muted); line-height:1.5}
 .btn.danger{border-color:rgba(255,107,138,.5); color:#FF6B8A}
 .btn.danger:hover{background:rgba(255,107,138,.1); border-color:#FF6B8A}
@@ -552,9 +553,11 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
           <label>Date<input type="text" id="ivDate" placeholder="dd.mm.yyyy"></label>
           <label>Statement no.<input type="text" id="ivStmt"></label>
           <label>Period<input type="text" id="ivPeriod" placeholder="H2 2024"></label>
-          <label>Net amount <span class="if-cur" id="ivCur">€</span><input type="number" step="0.01" id="ivAmount"></label>
+          <label>Net amount <span class="if-cur">€</span><input type="number" step="0.01" id="ivAmount"></label>
+          <label>Carryover prev. period <span class="if-cur" id="ivCur">€</span><input type="number" step="0.01" id="ivCarry" placeholder="0.00"></label>
           <label>Greeting name (Hello …)<input type="text" id="ivGreet"></label>
         </div>
+        <div class="inv-total-hint" id="ivTotalHint"></div>
         <label class="if-full">Recipient (label)<input type="text" id="ivRecipient"></label>
         <label class="if-full">Recipient address<textarea id="ivAddr" rows="3" placeholder="Street&#10;Postcode City"></textarea></label>
       </div>
@@ -1104,7 +1107,24 @@ function parseMelino(lines){
   if(pm=text.match(/(?:Term|Zeitraum):\s*(\d{2}\.\d{2}\.\d{4})\s*-\s*(\d{2}\.\d{2}\.\d{4})/i)){ periodStart=pm[1]; periodEnd=pm[2]; }
   if(german){ if(pm=text.match(/Netto:\s*€\s*([\d.]*,\d{2})/i)) payable=parseFloat(pm[1].replace(/\./g,"").replace(",",".")); }
   else { const tl=lines.find(l=>/^Total\b/i.test(l)); if(tl){ const nums=tl.match(/[\d,]*\.\d{2}/g); if(nums&&nums.length) payable=parseFloat(nums[nums.length-1].replace(/,/g,"")); } }
-  return {year, half, licensee, currency:"€", tracks, stmtNo, payable, periodStart, periodEnd};
+  return {year, half, licensee, currency:"€", tracks, stmtNo, payable, periodStart, periodEnd, carryover:findCarryover(lines, german)};
+}
+
+/* best-effort: detect a carry-over / brought-forward line from a previous period */
+function findCarryover(lines, german){
+  const re = german
+    ? /(übertrag|saldovortrag|\bvortrag\b|aus\s+vorperiode|vorperiode|vormonat|guthaben\s+vorperiode)/i
+    : /(carry[\s-]?over|carried\s+forward|brought\s+forward|balance\s+forward|previous\s+balance|opening\s+balance|prior\s+period)/i;
+  for(const l of lines){
+    if(!re.test(l)) continue;
+    const nums = german ? l.match(/-?\s?[\d.]*,\d{2}/g) : l.match(/-?\s?[\d,]*\.\d{2}/g);
+    if(nums && nums.length){
+      const raw=nums[nums.length-1].replace(/\s/g,"");
+      const val = german ? parseFloat(raw.replace(/\./g,"").replace(",",".")) : parseFloat(raw.replace(/,/g,""));
+      if(!isNaN(val) && val!==0) return val;
+    }
+  }
+  return null;
 }
 
 function parseLabelWorx(lines){
@@ -1136,7 +1156,7 @@ function parseLabelWorx(lines){
   if(pm=text.match(/Statement\s*No\.?\s*:?\s*(\S+)/i)) stmtNo=pm[1];
   if(pm=text.match(/Period\s*Start\s*:?\s*(\d{2})\/(\d{2})\/(\d{4})/i)) ps=pm[1]+"."+pm[2]+"."+pm[3];
   if(pm=text.match(/Period\s*End\s*:?\s*(\d{2})\/(\d{2})\/(\d{4})/i)) pe=pm[1]+"."+pm[2]+"."+pm[3];
-  return {year, half, licensee:label, currency, tracks, stmtNo, payable:balance, periodStart:ps, periodEnd:pe};
+  return {year, half, licensee:label, currency, tracks, stmtNo, payable:balance, periodStart:ps, periodEnd:pe, carryover:findCarryover(lines, false)};
 }
 
 function parseStatement(lines){
@@ -1627,7 +1647,8 @@ function captureStatement(p, label, year, half){
   const id=normKey(label)+"|"+(stmtNo||(year+"-"+half));
   const prev=statements.find(s=>s.id===id);
   const rec={id,label,stmtNo,year,half,periodStart:p.periodStart||"",periodEnd:p.periodEnd||"",payable:(p.payable!=null?p.payable:null),currency:p.currency||"€",
-             status: prev?prev.status||"open":"open"};   // keep an existing paid/carry status on re-import
+             status: prev?prev.status||"open":"open",   // keep an existing paid/carry status on re-import
+             carryover: (p.carryover!=null ? p.carryover : (prev&&prev.carryover!=null ? prev.carryover : 0))};
   const i=statements.findIndex(s=>s.id===id);
   if(i>=0) statements[i]=rec; else statements.push(rec);
 }
@@ -1703,7 +1724,18 @@ function openInvoiceEditor(id){
   set("ivStmt",s.stmtNo||"");
   set("ivPeriod",s.half+" "+s.year);
   set("ivAmount",(s.payable!=null?s.payable:0).toFixed(2));
+  set("ivCarry",(s.carryover!=null?s.carryover:0).toFixed(2));
   document.getElementById("ivCur").textContent=s.currency||"€";
+  updateInvTotal();
+}
+function updateInvTotal(){
+  const val=id=>parseFloat((document.getElementById(id)||{}).value)||0;
+  const cur=editingStmt?(editingStmt.currency||"€"):"€";
+  const roy=val("ivAmount"), carry=val("ivCarry"), total=roy+carry;
+  const h=document.getElementById("ivTotalHint"); if(!h) return;
+  h.innerHTML = carry
+    ? `Invoice total: <b>${invMoney(roy,cur)}</b> royalties + <b>${invMoney(carry,cur)}</b> carryover = <b>${invMoney(total,cur)}</b>`
+    : `Invoice total: <b>${invMoney(total,cur)}</b>`;
 }
 function closeInvoiceEditor(){ document.getElementById("invModal").classList.add("hidden"); editingStmt=null; }
 function downloadInvoice(){
@@ -1719,9 +1751,11 @@ function downloadInvoice(){
     stmtNo:v("ivStmt"),
     periodText:v("ivPeriod"),
     amount:parseFloat(v("ivAmount"))||0,
+    carryover:parseFloat(v("ivCarry"))||0,
     currency:editingStmt.currency||"€"
   };
   labelAddresses[normKey(editingStmt.label)]=d.recipientAddr;   // remember address for next time
+  editingStmt.carryover=d.carryover;                             // remember carryover on the statement
   saveState();
   try{ generateInvoicePDF(d); toast("Invoice PDF downloaded.",true); }
   catch(e){ toast("PDF failed: "+e.message); }
@@ -1770,8 +1804,9 @@ function generateInvoicePDF(d){
   };
   row("Type of service","Amount","bold",10.5);
   row("Royalties as per Statement "+d.stmtNo+" ("+d.periodText+")", invMoney(d.amount,d.currency), "italic", 10);
+  if(d.carryover){ row("Carryover from previous period", invMoney(d.carryover,d.currency), "italic", 10); }
   row("VAT (not applicable under § 19 (1) UStG)","(-)","normal",10);
-  row("Total", invMoney(d.amount,d.currency), "bold", 10.5);
+  row("Total", invMoney(d.amount+(d.carryover||0),d.currency), "bold", 10.5);
   y+=12;
   doc.setFont("helvetica","normal"); doc.setFontSize(10.5);
   doc.text(doc.splitTextToSize("The invoice amount is due immediately without deduction, payable to the account stated above.", W-2*M), M, y);
@@ -1822,6 +1857,7 @@ document.querySelectorAll("#rvHalf button").forEach(b=>b.onclick=()=>{pendingHal
 document.getElementById("ivClose").onclick=closeInvoiceEditor;
 document.getElementById("ivCancel").onclick=closeInvoiceEditor;
 document.getElementById("ivDownload").onclick=downloadInvoice;
+["ivAmount","ivCarry"].forEach(id=>{ const e=document.getElementById(id); if(e) e.oninput=updateInvTotal; });
 document.getElementById("invModal").addEventListener("click",e=>{ if(e.target.id==="invModal") closeInvoiceEditor(); });
 
 document.getElementById("bkAdd").onclick=saveBooking;
