@@ -254,7 +254,15 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 .konto-add{display:flex; gap:10px; padding:16px 12px 4px; flex-wrap:wrap; align-items:center}
 .konto-add input,.konto-add select{background:var(--ink); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:Inter; font-size:13px; padding:8px 10px}
 .konto-add .ka-nr{width:90px} .konto-add .ka-name{flex:1; min-width:150px}
-.book-table td:nth-child(6){text-align:right; font-family:"JetBrains Mono",monospace}
+.book-tools{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+.book-table .jno{width:44px; font-family:"JetBrains Mono",monospace; color:var(--muted); text-align:left}
+.book-table .jkonto{text-align:left}
+.book-table .num{text-align:right; font-family:"JetBrains Mono",monospace}
+.book-table .jact{text-align:right; white-space:nowrap}
+.book-table tr.locked td{color:var(--muted)}
+.book-table tr.storno td{background:rgba(255,107,138,.05)}
+.lock-ic{width:14px; height:14px; fill:none; stroke:var(--faint); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; vertical-align:-2px; margin-right:6px}
+.book-table .jact .link-btn{margin-right:6px}
 .modal-wide{max-width:760px; width:94vw}
 .fy-recon{margin:0 22px 4px; padding:11px 14px; border-radius:10px; font-size:13.5px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; border:1px solid var(--line); background:var(--ink)}
 .fy-recon b{font-family:"Space Grotesk",sans-serif}
@@ -452,14 +460,19 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
           <label>Doc no.<input type="text" id="bkBeleg" placeholder="optional"></label>
         </div>
         <label class="bf-full">Text<input type="text" id="bkText" placeholder="Buchungstext"></label>
-        <div class="bf-foot"><span class="bf-hint" id="bkHint"></span><button class="btn amber" id="bkAdd" type="button">Add booking</button></div>
+        <div class="bf-foot"><span class="bf-hint" id="bkHint"></span>
+          <button class="btn" id="bkCancel" type="button" style="display:none">Cancel edit</button>
+          <button class="btn amber" id="bkAdd" type="button">Add booking</button></div>
       </div>
     </section>
 
     <section class="section">
       <div class="sec-head book-head">
-        <div><h2><span class="sec-no">3</span> Journal</h2><p>All bookings for the selected period, newest first.</p></div>
-        <label class="mini-field">Period <select id="bkPeriod"></select></label>
+        <div><h2><span class="sec-no">3</span> Journal</h2><p>All bookings for the selected period, newest first. Locked entries can only be corrected by a reversal (Storno).</p></div>
+        <div class="book-tools">
+          <label class="mini-field">Period <select id="bkPeriod"></select></label>
+          <button class="btn mini" id="bkLock" type="button">Festschreiben</button>
+        </div>
       </div>
       <div class="panel tbl-wrap"><table class="mtable book-table" id="journalTable"></table></div>
     </section>
@@ -928,7 +941,7 @@ function serialize(){
     singles:singles.map(s=>({name:s.name,color:s.color,release:s.release,daily:s.series.map(p=>p.s),visible:visible[s.name]!==false})),
     royalties:royaltyTracks.map(t=>({name:t.name,color:t.color,entries:t.entries})),
     statements:statements, labelAddresses:labelAddresses, issuer:issuer,
-    accounts:accounts, bookings:bookings};
+    accounts:accounts, bookings:bookings, bookingSeq:bookingSeq};
 }
 function rebuildFromState(state){
   singles=[]; for(const k in visible) delete visible[k];
@@ -950,6 +963,12 @@ function rebuildFromState(state){
   issuer = Object.assign({}, ISSUER_DEFAULT, (state.issuer && typeof state.issuer==="object") ? state.issuer : {});
   if(Array.isArray(state.accounts) && state.accounts.length) accounts = state.accounts.map(a=>({...a}));
   bookings = Array.isArray(state.bookings) ? state.bookings.map(b=>({...b})) : [];
+  // normalise legacy bookings: ensure a locked flag and a running number
+  let maxNo = Number(state.bookingSeq)||0;
+  bookings.forEach(b=>{ if(b.locked===undefined) b.locked=false; if(typeof b.no==="number") maxNo=Math.max(maxNo,b.no); });
+  bookings.forEach(b=>{ if(typeof b.no!=="number") b.no=++maxNo; });
+  bookingSeq = maxNo;
+  editId = null;
 }
 function saveState(){ if(!canPersist) return; try{ localStorage.setItem(STORE_KEY, JSON.stringify(serialize())); }catch(e){} }
 function loadState(){
@@ -1305,7 +1324,11 @@ function removeAccount(nr){
 }
 
 /* ---- bookings ---- */
-function addBooking(){
+let bookingSeq=0;             // persistent running journal number
+let editId=null;             // id of booking currently being edited (null = new entry)
+function nextNo(){ return ++bookingSeq; }
+
+function saveBooking(){
   const date=document.getElementById("bkDate").value;
   const soll=document.getElementById("bkSoll").value, haben=document.getElementById("bkHaben").value;
   const amount=parseFloat(document.getElementById("bkAmount").value);
@@ -1318,11 +1341,59 @@ function addBooking(){
   if(soll===haben) return err("Debit and credit must differ.");
   if(isNaN(amount)||amount<=0) return err("Enter a positive amount.");
   hint.classList.remove("err"); hint.textContent="";
-  bookings.push({id:"b"+Date.now()+Math.floor(Math.random()*1000), date, soll, haben, amount:Math.round(amount*100)/100, text, beleg, source:"manual"});
-  document.getElementById("bkAmount").value=""; document.getElementById("bkText").value=""; document.getElementById("bkBeleg").value="";
-  renderBooks(); toast("Booking added.",true);
+  if(editId){
+    const b=bookings.find(x=>x.id===editId);
+    if(b && !b.locked){ Object.assign(b,{date,soll,haben,amount:Math.round(amount*100)/100,text,beleg}); toast("Booking #"+b.no+" updated.",true); }
+    cancelEdit();
+  } else {
+    bookings.push({id:"b"+Date.now()+Math.floor(Math.random()*1000), no:nextNo(), date, soll, haben, amount:Math.round(amount*100)/100, text, beleg, source:"manual", locked:false});
+    document.getElementById("bkAmount").value=""; document.getElementById("bkText").value=""; document.getElementById("bkBeleg").value="";
+    toast("Booking added.",true);
+  }
+  renderBooks();
 }
-function deleteBooking(id){ bookings=bookings.filter(b=>b.id!==id); renderBooks(); }
+function editBooking(id){
+  const b=bookings.find(x=>x.id===id); if(!b||b.locked) return;
+  editId=id;
+  document.getElementById("bkDate").value=b.date;
+  renderBooks();   // repopulate selects with current values
+  document.getElementById("bkSoll").value=b.soll; document.getElementById("bkHaben").value=b.haben;
+  document.getElementById("bkAmount").value=b.amount; document.getElementById("bkText").value=b.text||""; document.getElementById("bkBeleg").value=b.beleg||"";
+  document.getElementById("bkAdd").textContent="Update booking #"+b.no;
+  document.getElementById("bkCancel").style.display="";
+  const hint=document.getElementById("bkHint"); hint.classList.remove("err"); hint.textContent="Editing booking #"+b.no;
+  document.getElementById("tab-books").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function cancelEdit(){
+  editId=null;
+  document.getElementById("bkAdd").textContent="Add booking";
+  document.getElementById("bkCancel").style.display="none";
+  const hint=document.getElementById("bkHint"); hint.classList.remove("err"); hint.textContent="";
+  document.getElementById("bkAmount").value=""; document.getElementById("bkText").value=""; document.getElementById("bkBeleg").value="";
+  document.getElementById("bkSoll").value=""; document.getElementById("bkHaben").value="";
+}
+function deleteBooking(id){
+  const b=bookings.find(x=>x.id===id); if(!b) return;
+  if(b.locked){ toast("Booking #"+b.no+" is locked — use Storno."); return; }
+  if(!confirm("Delete booking #"+b.no+"?")) return;
+  if(editId===id) cancelEdit();
+  bookings=bookings.filter(x=>x.id!==id); renderBooks();
+}
+function stornoBooking(id){
+  const b=bookings.find(x=>x.id===id); if(!b) return;
+  if(!confirm("Reverse booking #"+b.no+" with a Storno? A locked counter-entry (swapped Soll/Haben) will be posted. Re-book the correction manually afterwards.")) return;
+  bookings.push({id:"b"+Date.now()+Math.floor(Math.random()*1000), no:nextNo(),
+    date:new Date().toISOString().slice(0,10), soll:b.haben, haben:b.soll, amount:b.amount,
+    text:"Storno #"+b.no+(b.text?(" · "+b.text):""), beleg:b.beleg||"", source:"storno", locked:true, stornoOf:b.no});
+  renderBooks(); toast("Storno for #"+b.no+" posted.",true);
+}
+function festschreiben(){
+  const open=bookings.filter(b=>!b.locked).length;
+  if(!open){ toast("Nothing to lock — all bookings are already locked."); return; }
+  if(!confirm("Lock all "+open+" open booking(s)? Locked bookings can no longer be edited or deleted — only reversed by a Storno.")) return;
+  if(editId) cancelEdit();
+  bookings.forEach(b=>{ b.locked=true; }); renderBooks(); toast(open+" booking(s) locked.",true);
+}
 
 function bookingPeriods(){ return [...new Set(bookings.map(b=>periodOf(b.date)).filter(Boolean))].sort().reverse(); }
 
@@ -1351,21 +1422,27 @@ function renderBooks(){
 
 function renderJournal(list){
   const t=document.getElementById("journalTable");
-  const rows=list.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")||b.id.localeCompare(a.id));
+  const rows=list.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")||((b.no||0)-(a.no||0)));
   let sumS=0; list.forEach(b=>sumS+=+b.amount);
-  t.innerHTML="<thead><tr><th>Date</th><th>Doc</th><th>Text</th><th>Debit · Soll</th><th>Credit · Haben</th><th class='num'>Amount</th><th></th></tr></thead><tbody>"+
-    (rows.length? rows.map(b=>`<tr>
+  const LOCK='<svg class="lock-ic" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0110 0v3"/><rect x="5" y="10" width="14" height="10" rx="2"/></svg>';
+  t.innerHTML="<thead><tr><th class='jno'>No.</th><th>Date</th><th>Doc</th><th>Text</th><th>Debit · Soll</th><th>Credit · Haben</th><th class='num'>Amount</th><th></th></tr></thead><tbody>"+
+    (rows.length? rows.map(b=>`<tr class="${b.locked?"locked":""}${b.source==="storno"?" storno":""}">
+        <td class="jno">${b.no!=null?b.no:""}</td>
         <td>${(b.date||"").split("-").reverse().join(".")}</td>
-        <td class="acct-tag">${b.beleg||(b.source==="fyrst"?"bank":"")}</td>
+        <td class="acct-tag">${b.beleg||(b.source==="fyrst"?"bank":b.source==="storno"?"storno":"")}</td>
         <td>${b.text||""}</td>
-        <td><span class="acct-tag">${b.soll}</span> ${acc(b.soll)?acc(b.soll).name:""}</td>
-        <td><span class="acct-tag">${b.haben}</span> ${acc(b.haben)?acc(b.haben).name:""}</td>
+        <td class="jkonto"><span class="acct-tag">${b.soll}</span> ${acc(b.soll)?acc(b.soll).name:""}</td>
+        <td class="jkonto"><span class="acct-tag">${b.haben}</span> ${acc(b.haben)?acc(b.haben).name:""}</td>
         <td class="num">${deMoney(b.amount)}</td>
-        <td style="text-align:right"><button class="del-x" data-delbk="${b.id}" title="Delete">&times;</button></td></tr>`).join("")
-      : `<tr><td colspan="7" style="color:var(--faint); padding:18px 12px">No bookings in this period.</td></tr>`)+
-    (rows.length?`<tr class="row-sum"><td colspan="5">Total (Soll = Haben)</td><td class="num">${deMoney(sumS)}</td><td></td></tr>`:"")+
+        <td class="jact">${ b.locked
+            ? `${LOCK}<button class="link-btn" data-storno="${b.id}" title="Reverse with Storno">Storno</button>`
+            : `<button class="link-btn" data-editbk="${b.id}">Edit</button><button class="del-x" data-delbk="${b.id}" title="Delete">&times;</button>` }</td></tr>`).join("")
+      : `<tr><td colspan="8" style="color:var(--faint); padding:18px 12px">No bookings in this period.</td></tr>`)+
+    (rows.length?`<tr class="row-sum"><td colspan="6">Total (Soll = Haben)</td><td class="num">${deMoney(sumS)}</td><td></td></tr>`:"")+
     "</tbody>";
   t.querySelectorAll("[data-delbk]").forEach(b=>b.onclick=()=>deleteBooking(b.dataset.delbk));
+  t.querySelectorAll("[data-editbk]").forEach(b=>b.onclick=()=>editBooking(b.dataset.editbk));
+  t.querySelectorAll("[data-storno]").forEach(b=>b.onclick=()=>stornoBooking(b.dataset.storno));
 }
 
 function accountFlow(list){   // per account: {soll, haben}
@@ -1489,8 +1566,8 @@ function confirmFyrstImport(){
     const soll=r.sign==="+"?"1200":r.konto, haben=r.sign==="+"?r.konto:"1200";
     const fkey=`${r.date}|${r.sign}|${r.amount.toFixed(2)}|${(r.name||"").slice(0,24)}`;
     if(bookings.some(b=>b.fkey===fkey)){ dup++; return; }
-    bookings.push({id:"b"+Date.now()+Math.floor(Math.random()*1e4), date:r.date, soll, haben, amount:Math.round(r.amount*100)/100,
-      text:(r.name||"")+(r.zweck?(" · "+r.zweck):""), beleg:"", source:"fyrst", fkey});
+    bookings.push({id:"b"+Date.now()+Math.floor(Math.random()*1e4), no:nextNo(), date:r.date, soll, haben, amount:Math.round(r.amount*100)/100,
+      text:(r.name||"")+(r.zweck?(" · "+r.zweck):""), beleg:"", source:"fyrst", fkey, locked:false});
     added++;
   });
   closeFyrst(); renderBooks();
@@ -1721,7 +1798,9 @@ document.getElementById("ivCancel").onclick=closeInvoiceEditor;
 document.getElementById("ivDownload").onclick=downloadInvoice;
 document.getElementById("invModal").addEventListener("click",e=>{ if(e.target.id==="invModal") closeInvoiceEditor(); });
 
-document.getElementById("bkAdd").onclick=addBooking;
+document.getElementById("bkAdd").onclick=saveBooking;
+document.getElementById("bkCancel").onclick=cancelEdit;
+document.getElementById("bkLock").onclick=festschreiben;
 document.getElementById("bkPeriod").onchange=renderBooks;
 document.getElementById("kaAdd").onclick=addAccount;
 
