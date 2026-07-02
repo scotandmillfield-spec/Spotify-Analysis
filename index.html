@@ -189,8 +189,11 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
   font-family:'JetBrains Mono',monospace; font-size:14px; padding:7px 10px}
 .rv-src{font-size:12px; color:var(--faint); margin-left:auto}
 .rv-labelinput{flex:1; min-width:160px; background:var(--ink); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:Inter; font-size:13.5px; padding:8px 11px}
+.rv-stmtinput{flex:1; min-width:150px; background:var(--ink); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:Inter; font-size:13.5px; padding:8px 11px}
+.rv-tracks-head{display:flex; align-items:center; justify-content:space-between; padding:12px 22px 2px}
+#rvCur button{min-width:34px}
 .modal-body{padding:8px 22px; overflow-y:auto}
-.rv-row{display:grid; grid-template-columns:22px 1fr 110px; gap:10px; align-items:center; padding:9px 0; border-bottom:1px solid var(--line)}
+.rv-row{display:grid; grid-template-columns:22px 1fr 110px 26px; gap:10px; align-items:center; padding:9px 0; border-bottom:1px solid var(--line)}
 .rv-row:last-child{border-bottom:none}
 .rv-row input[type=text]{background:var(--ink); border:1px solid var(--line); border-radius:7px; color:var(--text);
   font-family:Inter; font-size:13.5px; padding:7px 10px; width:100%}
@@ -393,6 +396,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
           <div class="s">Melino (English &amp; German) and LabelWorx statements are recognised automatically · multiple tracks per statement are detected · you confirm the figures before they're saved · re-importing the same half-year updates it</div>
         </div>
         <div class="dz-actions">
+          <button class="btn amber" id="royManualBtn" type="button">Enter manually</button>
           <button class="btn" id="royClearBtn" type="button">Clear royalties</button>
         </div>
         <input type="file" id="pdfInput" accept="application/pdf,.pdf" multiple hidden>
@@ -585,6 +589,18 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <div class="modal-period" style="border-top:none">
         <span class="rv-label">Label</span>
         <input type="text" id="rvLabel" class="rv-labelinput" placeholder="Statement source / licensee">
+      </div>
+      <div class="modal-period" style="border-top:none">
+        <span class="rv-label">Details</span>
+        <div class="ctrl" id="rvCur">
+          <button data-cur="€" type="button" class="on">€</button>
+          <button data-cur="£" type="button">£</button>
+        </div>
+        <input type="text" id="rvStmt" class="rv-stmtinput" placeholder="Statement no. (optional)">
+      </div>
+      <div class="rv-tracks-head">
+        <span class="rv-label">Tracks</span>
+        <button class="btn mini" id="rvAddRow" type="button">+ Add track</button>
       </div>
       <div class="modal-body" id="rvRows"></div>
       <div class="modal-foot">
@@ -1165,46 +1181,78 @@ function parseStatement(lines){
   return parseMelino(lines);     // melino (English or German) or unknown -> empty tracks
 }
 
-/* ---- review modal + import queue ---- */
-let pendingHalf="H2", pendingCurrency="€", pendingParsed=null, pdfQueue=[];
-function openReview(parsed){
-  pendingParsed=parsed;
-  document.getElementById("reviewModal").classList.remove("hidden");
-  document.getElementById("rvYear").value=parsed.year||new Date().getFullYear();
-  pendingHalf=parsed.half||"H2";
-  pendingCurrency=parsed.currency||"€";
-  document.querySelectorAll("#rvHalf button").forEach(b=>b.classList.toggle("on",b.dataset.half===pendingHalf));
-  document.getElementById("rvLabel").value=parsed.licensee||"";
-  const rows=document.getElementById("rvRows"), confirm=document.getElementById("rvConfirm");
-  if(!parsed.tracks.length){
-    rows.innerHTML='<div class="modal-note">No tracks detected — this PDF may use a different layout. Try another statement, or we can add manual entry later.</div>';
-    confirm.disabled=true; return;
-  }
-  confirm.disabled=false;
-  rows.innerHTML=parsed.tracks.map((t,i)=>`
-    <div class="rv-row" data-i="${i}">
-      <input type="checkbox" checked data-role="inc">
-      <input type="text" value="${(t.title||'').replace(/"/g,'&quot;')}" data-role="title">
-      <div class="rv-amt"><span>${pendingCurrency}</span><input type="number" step="0.01" value="${(+t.amount||0).toFixed(2)}" data-role="amt"></div>
-    </div>`).join("");
+/* ---- review modal + import queue (also used for manual entry) ---- */
+let pendingHalf="H2", pendingCurrency="€", pendingParsed=null, pdfQueue=[], manualMode=false;
+function rvRowHTML(title, amount){
+  return `<div class="rv-row">
+    <input type="checkbox" checked data-role="inc">
+    <input type="text" value="${(title||'').replace(/"/g,'&quot;')}" data-role="title" placeholder="Track title">
+    <div class="rv-amt"><span class="rv-cur">${pendingCurrency}</span><input type="number" step="0.01" value="${amount!=null?(+amount).toFixed(2):''}" data-role="amt" placeholder="0.00"></div>
+    <button class="del-x" data-role="del" title="Remove">&times;</button>
+  </div>`;
+}
+function wireRvRows(){
+  const rows=document.getElementById("rvRows");
   rows.querySelectorAll('[data-role=inc]').forEach(c=>c.onchange=()=>c.closest(".rv-row").classList.toggle("off",!c.checked));
+  rows.querySelectorAll('[data-role=del]').forEach(b=>b.onclick=()=>{ const r=b.closest(".rv-row"); if(r) r.remove(); });
+}
+function addRvRow(){ document.getElementById("rvRows").insertAdjacentHTML("beforeend", rvRowHTML("", null)); wireRvRows(); }
+function setRvCurrency(cur){ pendingCurrency=cur;
+  document.querySelectorAll("#rvCur button").forEach(b=>b.classList.toggle("on",b.dataset.cur===cur));
+  document.querySelectorAll("#rvRows .rv-cur").forEach(s=>s.textContent=cur);
+}
+function fillReviewMeta(year,half,label,currency,stmtNo){
+  document.getElementById("rvYear").value=year;
+  pendingHalf=half;
+  document.querySelectorAll("#rvHalf button").forEach(b=>b.classList.toggle("on",b.dataset.half===pendingHalf));
+  document.getElementById("rvLabel").value=label||"";
+  document.getElementById("rvStmt").value=stmtNo||"";
+  setRvCurrency(currency||"€");
+}
+function openReview(parsed){
+  manualMode=false; pendingParsed=parsed;
+  document.getElementById("rvTitle").textContent="Review royalty import";
+  document.getElementById("rvConfirm").textContent="Import";
+  document.getElementById("rvConfirm").disabled=false;
+  document.getElementById("reviewModal").classList.remove("hidden");
+  fillReviewMeta(parsed.year||new Date().getFullYear(), parsed.half||"H2", parsed.licensee||"", parsed.currency||"€", parsed.stmtNo||"");
+  const rows=document.getElementById("rvRows");
+  rows.innerHTML = parsed.tracks.length ? parsed.tracks.map(t=>rvRowHTML(t.title, +t.amount||0)).join("") : rvRowHTML("", null);
+  wireRvRows();
+  if(!parsed.tracks.length) toast("No tracks auto-detected — add them by hand below.");
+}
+function openReviewManual(){
+  manualMode=true; pendingParsed=null;
+  document.getElementById("rvTitle").textContent="Manual royalty entry";
+  document.getElementById("rvConfirm").textContent="Save";
+  document.getElementById("rvConfirm").disabled=false;
+  document.getElementById("reviewModal").classList.remove("hidden");
+  fillReviewMeta(new Date().getFullYear(), "H2", "", "€", "");
+  const rows=document.getElementById("rvRows");
+  rows.innerHTML = rvRowHTML("",null)+rvRowHTML("",null)+rvRowHTML("",null);
+  wireRvRows();
 }
 function closeReview(){ document.getElementById("reviewModal").classList.add("hidden"); }
 function afterReview(){ if(pdfQueue.length) setTimeout(()=>openReview(pdfQueue.shift()),180); }
 function confirmReview(){
   const year=parseInt(document.getElementById("rvYear").value)||new Date().getFullYear();
   const label=document.getElementById("rvLabel").value.trim()||null;
-  const period=periodKey(year, pendingHalf); let n=0;
+  const stmtNo=document.getElementById("rvStmt").value.trim();
+  const period=periodKey(year, pendingHalf); let n=0, sum=0;
   document.querySelectorAll("#rvRows .rv-row").forEach(row=>{
     if(!row.querySelector('[data-role=inc]').checked) return;
     const title=row.querySelector('[data-role=title]').value.trim();
     const amt=parseFloat(row.querySelector('[data-role=amt]').value);
     if(!title||isNaN(amt)) return;
-    upsertRoyalty(title, period, amt, label, pendingCurrency); n++;
+    upsertRoyalty(title, period, amt, label, pendingCurrency); n++; sum+=amt;
   });
   closeReview(); renderRoyalties();
-  if(pendingParsed) captureStatement(pendingParsed, label, year, pendingHalf);   // feed the Invoices tab
-  toast(n?`Imported ${n} track${n>1?'s':''} for ${period}.`:"Nothing imported.", n>0);
+  // feed the Invoices tab: manual builds a statement from the entered sum; import keeps parsed figures
+  const cap = manualMode
+    ? { stmtNo, payable:Math.round(sum*100)/100, currency:pendingCurrency, periodStart:"", periodEnd:"", carryover:0 }
+    : Object.assign({}, pendingParsed, { stmtNo:stmtNo||(pendingParsed&&pendingParsed.stmtNo), currency:pendingCurrency });
+  captureStatement(cap, label, year, pendingHalf);
+  toast(n?`${manualMode?"Saved":"Imported"} ${n} track${n>1?'s':''} for ${period}.`:"Nothing saved.", n>0);
   afterReview();
 }
 async function handlePdfFiles(files){
@@ -1853,6 +1901,9 @@ document.getElementById("modalClose").onclick=()=>{closeReview();afterReview();}
 document.getElementById("rvCancel").onclick=()=>{closeReview();afterReview();};
 document.getElementById("rvConfirm").onclick=confirmReview;
 document.querySelectorAll("#rvHalf button").forEach(b=>b.onclick=()=>{pendingHalf=b.dataset.half;document.querySelectorAll("#rvHalf button").forEach(x=>x.classList.toggle("on",x===b));});
+document.querySelectorAll("#rvCur button").forEach(b=>b.onclick=()=>setRvCurrency(b.dataset.cur));
+document.getElementById("rvAddRow").onclick=addRvRow;
+document.getElementById("royManualBtn").onclick=openReviewManual;
 
 document.getElementById("ivClose").onclick=closeInvoiceEditor;
 document.getElementById("ivCancel").onclick=closeInvoiceEditor;
