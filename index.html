@@ -263,6 +263,10 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 .book-table tr.storno td{background:rgba(255,107,138,.05)}
 .lock-ic{width:14px; height:14px; fill:none; stroke:var(--faint); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; vertical-align:-2px; margin-right:6px}
 .book-table .jact .link-btn{margin-right:6px}
+.data-actions{display:flex; gap:10px; flex-wrap:wrap}
+.data-note{margin-top:12px; font-size:12.5px; color:var(--muted); line-height:1.5}
+.btn.danger{border-color:rgba(255,107,138,.5); color:#FF6B8A}
+.btn.danger:hover{background:rgba(255,107,138,.1); border-color:#FF6B8A}
 .modal-wide{max-width:760px; width:94vw}
 .fy-recon{margin:0 22px 4px; padding:11px 14px; border-radius:10px; font-size:13.5px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; border:1px solid var(--line); background:var(--ink)}
 .fy-recon b{font-family:"Space Grotesk",sans-serif}
@@ -311,10 +315,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
           <div class="s">One file per single · needs a date column + a daily-streams column · re-upload the same single to update it · <code style="font-family:'JetBrains Mono';font-size:11px">YYYY-MM-DD</code> works best</div>
         </div>
         <div class="dz-actions">
-          <button class="btn amber" id="demoBtn" type="button">Load demo</button>
-          <button class="btn" id="backupBtn" type="button">Backup</button>
-          <button class="btn" id="restoreBtn" type="button">Restore</button>
-          <button class="btn" id="clearBtn" type="button">Clear</button>
+          <button class="btn" id="clearBtn" type="button">Clear singles</button>
         </div>
         <input type="file" id="fileInput" accept=".csv,text/csv" multiple hidden>
         <input type="file" id="jsonInput" accept=".json,application/json" hidden>
@@ -325,7 +326,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 
   <div class="empty hidden" id="emptyState">
     <h3>No singles loaded</h3>
-    <p>Upload a CSV above, or hit <b>Load demo</b> to explore with the three example singles.</p>
+    <p>Upload a Spotify for Artists timeline CSV above to get started.</p>
   </div>
 
   <div id="dashboard">
@@ -391,7 +392,6 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
           <div class="s">Melino (English &amp; German) and LabelWorx statements are recognised automatically · multiple tracks per statement are detected · you confirm the figures before they're saved · re-importing the same half-year updates it</div>
         </div>
         <div class="dz-actions">
-          <button class="btn amber" id="royDemoBtn" type="button">Load demo</button>
           <button class="btn" id="royClearBtn" type="button">Clear royalties</button>
         </div>
         <input type="file" id="pdfInput" accept="application/pdf,.pdf" multiple hidden>
@@ -401,7 +401,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 
     <div class="empty hidden" id="royEmpty">
       <h3>No royalties yet</h3>
-      <p>Drop a Melino royalty statement PDF above, or hit <b>Load demo</b> to see example earnings.</p>
+      <p>Drop a Melino or LabelWorx royalty statement PDF above to get started.</p>
     </div>
 
     <div id="royDash">
@@ -523,6 +523,19 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
           </select>
           <button class="btn mini" id="kaAdd" type="button">Add account</button>
         </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">&sect;</span> Data</h2>
+        <p>Backup and restore apply to <b>everything</b> — singles, royalties, statements, invoices, the chart of accounts and the journal. They live only in this browser, so keep a backup.</p></div>
+      <div class="panel issuer-panel">
+        <div class="data-actions">
+          <button class="btn amber" id="sBackup" type="button">Backup (download JSON)</button>
+          <button class="btn" id="sRestore" type="button">Restore from file…</button>
+          <button class="btn danger" id="sClearAll" type="button">Clear all data</button>
+        </div>
+        <div class="data-note">“Clear all data” permanently deletes every single, royalty, statement, invoice address and journal booking, and resets the chart of accounts to the default. This cannot be undone — back up first if in doubt.</div>
       </div>
     </section>
   </div>
@@ -987,11 +1000,25 @@ function importBackup(file){
   const r=new FileReader();
   r.onload=()=>{ try{ const st=JSON.parse(r.result);
       if(!st||!Array.isArray(st.singles)) throw new Error("not a valid backup file");
-      rebuildFromState(st); renderAll();
-      toast(`Restored ${singles.length} single${singles.length===1?'':'s'}.`,true);
+      rebuildFromState(st); renderEverything();
+      toast("Backup restored.",true);
     }catch(e){ toast("Restore failed: "+e.message); } };
   r.onerror=()=>toast("Could not read backup file.");
   r.readAsText(file);
+}
+function renderEverything(){
+  renderAll(); renderRoyalties(); renderInvoices(); renderBooks();
+  if(typeof renderSettings==="function") renderSettings();
+  if(typeof renderKontenplan==="function") renderKontenplan();
+}
+function clearAllData(){
+  if(!confirm("Delete ALL data — singles, royalties, statements, invoices and the entire journal? The chart of accounts resets to default. This cannot be undone.")) return;
+  try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+  singles=[]; if(typeof visible==="object") for(const k in visible) delete visible[k];
+  royaltyTracks=[]; statements=[]; invFilter="all"; labelAddresses={};
+  issuer=Object.assign({}, ISSUER_DEFAULT);
+  accounts=ACCOUNTS_SEED.map(a=>({...a})); bookings=[]; bookingSeq=0; editId=null;
+  renderEverything(); saveState(); toast("All data cleared.",true);
 }
 function updatePersistHint(){
   const txt = canPersist ? "Auto-saved in this browser." : "Auto-save unavailable here — use Backup / Restore to keep your data.";
@@ -1410,7 +1437,7 @@ function renderBooks(){
   const psel=document.getElementById("bkPeriod");
   const periods=bookingPeriods(); const cur=psel.value||"all";
   psel.innerHTML='<option value="all">All / cumulative</option>'+periods.map(p=>`<option value="${p}" ${p===cur?"selected":""}>${monthLabel(p)}</option>`).join("");
-  if(![...psel.options].some(o=>o.value===cur)) psel.value="all";
+  if(![...(psel.options||[])].some(o=>o.value===cur)) psel.value="all";
   const period=psel.value;
   const inPeriod = period==="all" ? bookings.slice() : bookings.filter(b=>periodOf(b.date)===period);
   const uptoEnd  = period==="all" ? bookings.slice() : bookings.filter(b=>periodOf(b.date)<=period);
@@ -1765,12 +1792,12 @@ fi.onchange=()=>{ handleFiles(fi.files); fi.value=""; };
 ["dragenter","dragover"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add("drag");}));
 ["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("drag");}));
 dz.addEventListener("drop",e=>handleFiles(e.dataTransfer.files));
-document.getElementById("demoBtn").onclick=loadDemo;
-document.getElementById("clearBtn").onclick=()=>{singles=[];for(const k in visible)delete visible[k];renderAll();toast("Cleared.",true);};
-document.getElementById("backupBtn").onclick=exportBackup;
+document.getElementById("clearBtn").onclick=()=>{singles=[];for(const k in visible)delete visible[k];renderAll();saveState();toast("Singles cleared.",true);};
 const ji=document.getElementById("jsonInput");
-document.getElementById("restoreBtn").onclick=()=>ji.click();
 ji.onchange=()=>{ if(ji.files[0]) importBackup(ji.files[0]); ji.value=""; };
+document.getElementById("sBackup").onclick=exportBackup;
+document.getElementById("sRestore").onclick=()=>ji.click();
+document.getElementById("sClearAll").onclick=clearAllData;
 document.querySelectorAll("#modeCtrl button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#modeCtrl button").forEach(x=>x.classList.remove("on"));b.classList.add("on");mode=b.dataset.mode;if(singles.length)buildMainChart();});
 document.querySelectorAll("#rangeCtrl button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#rangeCtrl button").forEach(x=>x.classList.remove("on"));b.classList.add("on");range=b.dataset.range;if(singles.length)buildMainChart();});
 
@@ -1784,7 +1811,6 @@ pfi.onchange=()=>{ handlePdfFiles(pfi.files); pfi.value=""; };
 ["dragenter","dragover"].forEach(ev=>pdz.addEventListener(ev,e=>{e.preventDefault();pdz.classList.add("drag");}));
 ["dragleave","drop"].forEach(ev=>pdz.addEventListener(ev,e=>{e.preventDefault();pdz.classList.remove("drag");}));
 pdz.addEventListener("drop",e=>handlePdfFiles(e.dataTransfer.files));
-document.getElementById("royDemoBtn").onclick=loadRoyaltyDemo;
 document.getElementById("royClearBtn").onclick=()=>{royaltyTracks=[];renderRoyalties();toast("Royalties cleared.",true);};
 
 /* review modal */
@@ -1818,8 +1844,9 @@ document.getElementById("fyrstModal").addEventListener("click",e=>{ if(e.target.
 document.getElementById("footStamp").textContent="Updated "+new Date().toLocaleDateString("en-US",{day:"2-digit",month:"short",year:"numeric"});
 
 /* boot: restore saved state if present, otherwise seed with demo */
-if(loadState()){ renderAll(); renderRoyalties(); }   // respects a saved state even if empty
-else { loadDemo(); loadRoyaltyDemo(); }              // first ever visit seeds both tabs
+/* boot: restore saved state if present, otherwise start empty (no demo data) */
+if(loadState()){ renderEverything(); }
+else { renderEverything(); }
 updatePersistHint();
 </script>
 </body>
