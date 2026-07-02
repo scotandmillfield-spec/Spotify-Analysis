@@ -228,6 +228,43 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 .fbtn.on{color:#06121c; background:var(--amber); border-color:var(--amber)}
 .fcount{font-family:"JetBrains Mono",monospace; font-size:11px; background:rgba(255,255,255,.08); border-radius:20px; padding:1px 7px; min-width:18px; text-align:center}
 .fbtn.on .fcount{background:rgba(0,0,0,.18)}
+/* bookkeeping */
+.book-form{padding:20px 22px; display:flex; flex-direction:column; gap:14px}
+.bf-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:13px 16px}
+.book-form label{display:flex; flex-direction:column; gap:6px; font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:var(--faint)}
+.book-form input,.book-form select{background:var(--ink); border:1px solid var(--line); border-radius:9px; color:var(--text); font-family:Inter; font-size:14px; padding:10px 11px}
+.book-form input:focus,.book-form select:focus{outline:none; border-color:var(--amber)}
+.bf-foot{display:flex; align-items:center; gap:14px; justify-content:flex-end}
+.bf-hint{margin-right:auto; font-size:13px; color:var(--muted)}
+.bf-hint.err{color:#FF6B8A}
+.book-head{display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap}
+.mini-field{font-family:"JetBrains Mono",monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); display:flex; align-items:center; gap:8px}
+.mini-field select{background:var(--ink); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:Inter; font-size:13px; padding:7px 10px; text-transform:none; letter-spacing:0}
+.mtable{width:100%; border-collapse:collapse; font-size:13.5px}
+.mtable th{text-align:left; font-family:"JetBrains Mono",monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); padding:10px 12px; border-bottom:1px solid var(--line); font-weight:600}
+.mtable td{padding:10px 12px; border-bottom:1px solid rgba(37,43,57,.5); color:var(--text)}
+.mtable td.num,.mtable th.num{text-align:right; font-family:"JetBrains Mono",monospace}
+.mtable tr:last-child td{border-bottom:none}
+.mtable .row-sum td{font-weight:600; border-top:1px solid var(--line); color:var(--text)}
+.mtable .row-result td{font-family:"Space Grotesk",sans-serif; font-weight:700; font-size:15px; border-top:2px solid var(--line)}
+.pos{color:var(--T)} .neg{color:#FF6B8A}
+.acct-tag{font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--muted)}
+.del-x{background:none; border:none; color:var(--faint); cursor:pointer; font-size:16px; line-height:1; padding:2px 6px; border-radius:6px}
+.del-x:hover{color:#FF6B8A; background:rgba(255,107,138,.1)}
+.konto-add{display:flex; gap:10px; padding:16px 12px 4px; flex-wrap:wrap; align-items:center}
+.konto-add input,.konto-add select{background:var(--ink); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:Inter; font-size:13px; padding:8px 10px}
+.konto-add .ka-nr{width:90px} .konto-add .ka-name{flex:1; min-width:150px}
+.book-table td:nth-child(6){text-align:right; font-family:"JetBrains Mono",monospace}
+.modal-wide{max-width:760px; width:94vw}
+.fy-recon{margin:0 22px 4px; padding:11px 14px; border-radius:10px; font-size:13.5px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; border:1px solid var(--line); background:var(--ink)}
+.fy-recon b{font-family:"Space Grotesk",sans-serif}
+.fy-recon .ok{color:var(--T)} .fy-recon .bad{color:#FF6B8A}
+.fy-table td{vertical-align:top}
+.fy-table .fy-amt{text-align:right; font-family:"JetBrains Mono",monospace; white-space:nowrap}
+.fy-table .fy-desc .p{font-weight:600} .fy-table .fy-desc .z{color:var(--muted); font-size:12px; margin-top:2px}
+.fy-table select{background:var(--ink); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:Inter; font-size:12.5px; padding:7px 8px; max-width:190px}
+.fy-table select.miss{border-color:#FFB454}
+.fy-side{font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--faint); margin-top:4px}
 .inv-form{display:flex; flex-direction:column; gap:13px}
 .if-grid{display:grid; grid-template-columns:1fr 1fr; gap:13px 16px}
 .inv-form label{display:flex; flex-direction:column; gap:5px; font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:var(--faint)}
@@ -250,6 +287,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <button class="tab on" data-tab="analytics" type="button">Analytics</button>
       <button class="tab" data-tab="royalties" type="button">Royalties</button>
       <button class="tab" data-tab="invoices" type="button">Invoices</button>
+      <button class="tab" data-tab="books" type="button">Journal / BWA</button>
       <button class="tab tab-gear" data-tab="settings" type="button" title="Settings" aria-label="Settings">
         <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/><path d="M19.4 13a7.6 7.6 0 000-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 00-1.7-1l-.4-2.5H8.8l-.4 2.5a7.6 7.6 0 00-1.7 1l-2.4-1-2 3.4L4.6 11a7.6 7.6 0 000 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 001.7 1l.4 2.5h6.4l.4-2.5a7.6 7.6 0 001.7-1l2.4 1 2-3.4-2-1.6z"/></svg>
       </button>
@@ -388,6 +426,55 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
     </section>
   </div>
 
+  <div class="tab-panel" id="tab-books" hidden>
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">1</span> Import bank statement</h2>
+        <p>Drop a Fyrst account statement (PDF). Each line becomes a booking against <b>1200 Bank Fyrst</b>; you review and adjust the contra-account before posting. Nothing is uploaded — parsing happens in your browser.</p></div>
+      <div class="dropzone" id="fyrstDrop">
+        <div class="dz-icon"><svg viewBox="0 0 24 24"><path d="M14 3v5h5"/><path d="M7 3h8l5 5v11a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M9 13h6M9 16h6M9 10h2"/></svg></div>
+        <div class="dz-text">
+          <div class="t">Drop a Fyrst Kontoauszug PDF, or click to browse</div>
+          <div class="s">Bookings, dates and amounts are read automatically · the contra-account is auto-suggested from the payee &amp; purpose · you confirm everything before it posts · a reconciliation check compares the sum against the statement's closing balance</div>
+        </div>
+        <input type="file" id="fyrstInput" accept="application/pdf,.pdf" multiple hidden>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">2</span> New entry</h2>
+        <p>Manual double-entry booking — for anything that doesn't run through the bank (cash, privately paid expenses, depreciation, corrections).</p></div>
+      <div class="panel book-form">
+        <div class="bf-grid">
+          <label>Date<input type="date" id="bkDate"></label>
+          <label>Debit · Soll<select id="bkSoll"></select></label>
+          <label>Credit · Haben<select id="bkHaben"></select></label>
+          <label>Amount €<input type="number" step="0.01" id="bkAmount"></label>
+          <label>Doc no.<input type="text" id="bkBeleg" placeholder="optional"></label>
+        </div>
+        <label class="bf-full">Text<input type="text" id="bkText" placeholder="Buchungstext"></label>
+        <div class="bf-foot"><span class="bf-hint" id="bkHint"></span><button class="btn amber" id="bkAdd" type="button">Add booking</button></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="sec-head book-head">
+        <div><h2><span class="sec-no">3</span> Journal</h2><p>All bookings for the selected period, newest first.</p></div>
+        <label class="mini-field">Period <select id="bkPeriod"></select></label>
+      </div>
+      <div class="panel tbl-wrap"><table class="mtable book-table" id="journalTable"></table></div>
+    </section>
+
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">4</span> BWA</h2><p>Revenue minus expenses, one line per account, for the selected period.</p></div>
+      <div class="panel tbl-wrap"><table class="mtable" id="bwaTable"></table></div>
+    </section>
+
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">5</span> Account balances</h2><p>Debit / credit totals and balance per account, as of the selected period — including bank and partner accounts.</p></div>
+      <div class="panel tbl-wrap"><table class="mtable" id="saldenTable"></table></div>
+    </section>
+  </div>
+
   <div class="tab-panel" id="tab-settings" hidden>
     <section class="section">
       <div class="sec-head">
@@ -404,6 +491,25 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
           <label>Place (invoice date line)<input type="text" id="isPlace"></label>
           <label>Sign-off (after "Kind Regards,")<input type="text" id="isSign"></label>
         </form>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">&sect;</span> Chart of accounts (Kontenplan)</h2>
+        <p>Your SKR-03-based accounts, used for bookings and the BWA. Add, rename or remove as needed.</p></div>
+      <div class="panel">
+        <table class="mtable" id="kontenTable"></table>
+        <div class="konto-add">
+          <input type="text" id="kaNr" class="ka-nr" placeholder="Nr.">
+          <input type="text" id="kaName" class="ka-name" placeholder="Bezeichnung">
+          <select id="kaArt">
+            <option value="ertrag">Ertrag</option>
+            <option value="aufwand">Aufwand</option>
+            <option value="aktiv">Aktiv</option>
+            <option value="passiv">Passiv</option>
+          </select>
+          <button class="btn mini" id="kaAdd" type="button">Add account</button>
+        </div>
       </div>
     </section>
   </div>
@@ -455,6 +561,21 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <div class="modal-foot">
         <button class="btn" id="rvCancel" type="button">Cancel</button>
         <button class="btn amber" id="rvConfirm" type="button">Import</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="fyrstModal">
+    <div class="modal modal-wide">
+      <div class="modal-head">
+        <h3 id="fyTitle">Review bank import</h3>
+        <button class="modal-x" id="fyClose" type="button">&times;</button>
+      </div>
+      <div class="fy-recon" id="fyRecon"></div>
+      <div class="modal-body"><table class="mtable fy-table" id="fyTable"></table></div>
+      <div class="modal-foot">
+        <button class="btn" id="fyCancel" type="button">Cancel</button>
+        <button class="btn amber" id="fyConfirm" type="button">Import bookings</button>
       </div>
     </div>
   </div>
@@ -806,7 +927,8 @@ function serialize(){
   return {v:1, savedAt:new Date().toISOString(),
     singles:singles.map(s=>({name:s.name,color:s.color,release:s.release,daily:s.series.map(p=>p.s),visible:visible[s.name]!==false})),
     royalties:royaltyTracks.map(t=>({name:t.name,color:t.color,entries:t.entries})),
-    statements:statements, labelAddresses:labelAddresses, issuer:issuer};
+    statements:statements, labelAddresses:labelAddresses, issuer:issuer,
+    accounts:accounts, bookings:bookings};
 }
 function rebuildFromState(state){
   singles=[]; for(const k in visible) delete visible[k];
@@ -826,6 +948,8 @@ function rebuildFromState(state){
   statements = Array.isArray(state.statements) ? state.statements.map(s=>Object.assign({status:"open"},s)) : [];
   labelAddresses = (state.labelAddresses && typeof state.labelAddresses==="object") ? state.labelAddresses : {};
   issuer = Object.assign({}, ISSUER_DEFAULT, (state.issuer && typeof state.issuer==="object") ? state.issuer : {});
+  if(Array.isArray(state.accounts) && state.accounts.length) accounts = state.accounts.map(a=>({...a}));
+  bookings = Array.isArray(state.bookings) ? state.bookings.map(b=>({...b})) : [];
 }
 function saveState(){ if(!canPersist) return; try{ localStorage.setItem(STORE_KEY, JSON.stringify(serialize())); }catch(e){} }
 function loadState(){
@@ -1120,10 +1244,257 @@ function switchTab(name){
   document.getElementById("tab-analytics").hidden = name!=="analytics";
   document.getElementById("tab-royalties").hidden = name!=="royalties";
   document.getElementById("tab-invoices").hidden = name!=="invoices";
+  document.getElementById("tab-books").hidden = name!=="books";
   document.getElementById("tab-settings").hidden = name!=="settings";
   if(name==="royalties") renderRoyalties();
   if(name==="invoices") renderInvoices();
-  if(name==="settings") renderSettings();
+  if(name==="books") renderBooks();
+  if(name==="settings"){ renderSettings(); renderKontenplan(); }
+}
+
+/* ================= BOOKKEEPING (Journal / BWA) ================= */
+const ACCOUNTS_SEED=[
+  {nr:"8000",name:"Umsatzerlöse",art:"ertrag"},
+  {nr:"8603",name:"Erstattungen",art:"ertrag"},
+  {nr:"1200",name:"Bank Fyrst",art:"aktiv"},
+  {nr:"1210",name:"Gesellschafter Lyall",art:"aktiv"},
+  {nr:"1220",name:"Gesellschafter Drozdzynski",art:"aktiv"},
+  {nr:"4200",name:"Raumkosten",art:"aufwand"},
+  {nr:"4240",name:"Energiekosten",art:"aufwand"},
+  {nr:"4360",name:"Versicherungen",art:"aufwand"},
+  {nr:"4660",name:"Reisekosten",art:"aufwand"},
+  {nr:"4830",name:"Abschreibungen Sachanlagen",art:"aufwand"},
+  {nr:"4860",name:"Abschreibungen GWG",art:"aufwand"},
+  {nr:"4920",name:"Telekommunikation",art:"aufwand"},
+  {nr:"4964",name:"Lizenzaufwand",art:"aufwand"},
+  {nr:"4970",name:"Bankgebühren",art:"aufwand"}
+];
+let accounts=ACCOUNTS_SEED.map(a=>({...a}));
+let bookings=[];    // {id,date:"YYYY-MM-DD",soll,haben,amount,text,beleg,source}
+
+const ART_LABEL={ertrag:"Ertrag", aufwand:"Aufwand", aktiv:"Aktiv", passiv:"Passiv"};
+function acc(nr){ return accounts.find(a=>a.nr===nr); }
+function accLabel(nr){ const a=acc(nr); return a? a.nr+" "+a.name : nr; }
+function deMoney(n){ return (Math.round((+n||0)*100)/100).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €"; }
+function periodOf(d){ return (d||"").slice(0,7); }        // YYYY-MM
+function monthLabel(p){ if(!p) return ""; const [y,m]=p.split("-"); return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][(+m||1)-1]+" "+y; }
+function accountOptions(sel){ return accounts.slice().sort((a,b)=>a.nr.localeCompare(b.nr)).map(a=>`<option value="${a.nr}" ${a.nr===sel?"selected":""}>${a.nr} · ${a.name}</option>`).join(""); }
+
+/* ---- chart of accounts editor (settings) ---- */
+function renderKontenplan(){
+  const t=document.getElementById("kontenTable"); if(!t) return;
+  const order={ertrag:0,aufwand:1,aktiv:2,passiv:3};
+  const rows=accounts.slice().sort((a,b)=>(order[a.art]-order[b.art])||a.nr.localeCompare(b.nr));
+  t.innerHTML="<thead><tr><th>Nr.</th><th>Bezeichnung</th><th>Art</th><th></th></tr></thead><tbody>"+
+    rows.map(a=>`<tr><td class="acct-tag">${a.nr}</td><td>${a.name}</td><td>${ART_LABEL[a.art]||a.art}</td>
+      <td style="text-align:right"><button class="del-x" data-delacc="${a.nr}" title="Remove">&times;</button></td></tr>`).join("")+
+    "</tbody>";
+  t.querySelectorAll("[data-delacc]").forEach(b=>b.onclick=()=>removeAccount(b.dataset.delacc));
+}
+function addAccount(){
+  const nr=document.getElementById("kaNr").value.trim(), name=document.getElementById("kaName").value.trim(), art=document.getElementById("kaArt").value;
+  if(!nr||!name){ toast("Enter account number and name."); return; }
+  if(acc(nr)){ toast("Account "+nr+" already exists."); return; }
+  accounts.push({nr,name,art});
+  document.getElementById("kaNr").value=""; document.getElementById("kaName").value="";
+  renderKontenplan(); saveState(); toast("Account added.",true);
+}
+function removeAccount(nr){
+  if(bookings.some(b=>b.soll===nr||b.haben===nr)){ toast("Account "+nr+" is used in bookings — cannot remove."); return; }
+  accounts=accounts.filter(a=>a.nr!==nr); renderKontenplan(); saveState();
+}
+
+/* ---- bookings ---- */
+function addBooking(){
+  const date=document.getElementById("bkDate").value;
+  const soll=document.getElementById("bkSoll").value, haben=document.getElementById("bkHaben").value;
+  const amount=parseFloat(document.getElementById("bkAmount").value);
+  const text=document.getElementById("bkText").value.trim();
+  const beleg=document.getElementById("bkBeleg").value.trim();
+  const hint=document.getElementById("bkHint");
+  const err=m=>{ hint.textContent=m; hint.classList.add("err"); };
+  if(!date) return err("Pick a date.");
+  if(!soll||!haben) return err("Choose both accounts.");
+  if(soll===haben) return err("Debit and credit must differ.");
+  if(isNaN(amount)||amount<=0) return err("Enter a positive amount.");
+  hint.classList.remove("err"); hint.textContent="";
+  bookings.push({id:"b"+Date.now()+Math.floor(Math.random()*1000), date, soll, haben, amount:Math.round(amount*100)/100, text, beleg, source:"manual"});
+  document.getElementById("bkAmount").value=""; document.getElementById("bkText").value=""; document.getElementById("bkBeleg").value="";
+  renderBooks(); toast("Booking added.",true);
+}
+function deleteBooking(id){ bookings=bookings.filter(b=>b.id!==id); renderBooks(); }
+
+function bookingPeriods(){ return [...new Set(bookings.map(b=>periodOf(b.date)).filter(Boolean))].sort().reverse(); }
+
+/* ---- the Books tab ---- */
+function renderBooks(){
+  // account selects for the entry form
+  const soll=document.getElementById("bkSoll"), haben=document.getElementById("bkHaben");
+  if(soll && !soll.value) soll.innerHTML='<option value="">Debit…</option>'+accountOptions();
+  else if(soll) soll.innerHTML='<option value="">Debit…</option>'+accountOptions(soll.value);
+  if(haben && !haben.value) haben.innerHTML='<option value="">Credit…</option>'+accountOptions();
+  else if(haben) haben.innerHTML='<option value="">Credit…</option>'+accountOptions(haben.value);
+  const bkDate=document.getElementById("bkDate"); if(bkDate && !bkDate.value) bkDate.value=new Date().toISOString().slice(0,10);
+  // period selector
+  const psel=document.getElementById("bkPeriod");
+  const periods=bookingPeriods(); const cur=psel.value||"all";
+  psel.innerHTML='<option value="all">All / cumulative</option>'+periods.map(p=>`<option value="${p}" ${p===cur?"selected":""}>${monthLabel(p)}</option>`).join("");
+  if(![...psel.options].some(o=>o.value===cur)) psel.value="all";
+  const period=psel.value;
+  const inPeriod = period==="all" ? bookings.slice() : bookings.filter(b=>periodOf(b.date)===period);
+  const uptoEnd  = period==="all" ? bookings.slice() : bookings.filter(b=>periodOf(b.date)<=period);
+  renderJournal(inPeriod);
+  renderBWA(inPeriod);
+  renderSalden(uptoEnd);
+  saveState();
+}
+
+function renderJournal(list){
+  const t=document.getElementById("journalTable");
+  const rows=list.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")||b.id.localeCompare(a.id));
+  let sumS=0; list.forEach(b=>sumS+=+b.amount);
+  t.innerHTML="<thead><tr><th>Date</th><th>Doc</th><th>Text</th><th>Debit · Soll</th><th>Credit · Haben</th><th class='num'>Amount</th><th></th></tr></thead><tbody>"+
+    (rows.length? rows.map(b=>`<tr>
+        <td>${(b.date||"").split("-").reverse().join(".")}</td>
+        <td class="acct-tag">${b.beleg||(b.source==="fyrst"?"bank":"")}</td>
+        <td>${b.text||""}</td>
+        <td><span class="acct-tag">${b.soll}</span> ${acc(b.soll)?acc(b.soll).name:""}</td>
+        <td><span class="acct-tag">${b.haben}</span> ${acc(b.haben)?acc(b.haben).name:""}</td>
+        <td class="num">${deMoney(b.amount)}</td>
+        <td style="text-align:right"><button class="del-x" data-delbk="${b.id}" title="Delete">&times;</button></td></tr>`).join("")
+      : `<tr><td colspan="7" style="color:var(--faint); padding:18px 12px">No bookings in this period.</td></tr>`)+
+    (rows.length?`<tr class="row-sum"><td colspan="5">Total (Soll = Haben)</td><td class="num">${deMoney(sumS)}</td><td></td></tr>`:"")+
+    "</tbody>";
+  t.querySelectorAll("[data-delbk]").forEach(b=>b.onclick=()=>deleteBooking(b.dataset.delbk));
+}
+
+function accountFlow(list){   // per account: {soll, haben}
+  const f={};
+  list.forEach(b=>{ (f[b.soll]=f[b.soll]||{s:0,h:0}).s+=+b.amount; (f[b.haben]=f[b.haben]||{s:0,h:0}).h+=+b.amount; });
+  return f;
+}
+function renderBWA(list){
+  const t=document.getElementById("bwaTable"); const f=accountFlow(list);
+  const rev=accounts.filter(a=>a.art==="ertrag").map(a=>({a, v:((f[a.nr]||{h:0,s:0}).h-(f[a.nr]||{h:0,s:0}).s)})).filter(x=>Math.abs(x.v)>0.004);
+  const exp=accounts.filter(a=>a.art==="aufwand").map(a=>({a, v:((f[a.nr]||{s:0,h:0}).s-(f[a.nr]||{s:0,h:0}).h)})).filter(x=>Math.abs(x.v)>0.004);
+  const sumR=rev.reduce((s,x)=>s+x.v,0), sumE=exp.reduce((s,x)=>s+x.v,0), result=sumR-sumE;
+  let h="<tbody>";
+  h+=`<tr class="row-sum"><td>Erträge</td><td class="num"></td></tr>`;
+  h+= rev.length? rev.map(x=>`<tr><td><span class="acct-tag">${x.a.nr}</span> ${x.a.name}</td><td class="num">${deMoney(x.v)}</td></tr>`).join("")
+                : `<tr><td style="color:var(--faint)">—</td><td class="num">${deMoney(0)}</td></tr>`;
+  h+=`<tr class="row-sum"><td>Summe Erträge</td><td class="num">${deMoney(sumR)}</td></tr>`;
+  h+=`<tr class="row-sum"><td>Aufwendungen</td><td class="num"></td></tr>`;
+  h+= exp.length? exp.map(x=>`<tr><td><span class="acct-tag">${x.a.nr}</span> ${x.a.name}</td><td class="num">${deMoney(x.v)}</td></tr>`).join("")
+                : `<tr><td style="color:var(--faint)">—</td><td class="num">${deMoney(0)}</td></tr>`;
+  h+=`<tr class="row-sum"><td>Summe Aufwendungen</td><td class="num">${deMoney(sumE)}</td></tr>`;
+  h+=`<tr class="row-result"><td>Betriebsergebnis</td><td class="num ${result>=0?"pos":"neg"}">${deMoney(result)}</td></tr>`;
+  t.innerHTML=h+"</tbody>";
+}
+function renderSalden(list){
+  const t=document.getElementById("saldenTable"); const f=accountFlow(list);
+  const used=accounts.filter(a=>f[a.nr]);
+  const order={aktiv:0,passiv:1,ertrag:2,aufwand:3};
+  used.sort((a,b)=>(order[a.art]-order[b.art])||a.nr.localeCompare(b.nr));
+  t.innerHTML="<thead><tr><th>Account</th><th>Art</th><th class='num'>Soll</th><th class='num'>Haben</th><th class='num'>Saldo</th></tr></thead><tbody>"+
+    (used.length? used.map(a=>{
+      const x=f[a.nr]; const saldo=(a.art==="aktiv"||a.art==="aufwand")? x.s-x.h : x.h-x.s;
+      return `<tr><td><span class="acct-tag">${a.nr}</span> ${a.name}</td><td>${ART_LABEL[a.art]}</td>
+        <td class="num">${deMoney(x.s)}</td><td class="num">${deMoney(x.h)}</td>
+        <td class="num ${saldo>=0?"pos":"neg"}">${deMoney(saldo)}</td></tr>`;
+    }).join("") : `<tr><td colspan="5" style="color:var(--faint); padding:18px 12px">No bookings yet.</td></tr>`)+
+    "</tbody>";
+}
+
+/* ---- Fyrst bank statement import ---- */
+let fyrstQueue=[];
+function parseFyrst(lines){
+  const num=s=>parseFloat(s.replace(/\./g,"").replace(",","."));
+  const reStart=/^(\d{2})\.(\d{2})\.\s+\d{2}\.\d{2}\.\s+(.*?)\s+([+-])\s+([\d.]+,\d{2})$/;
+  const reYearName=/^(\d{4})\s+\d{4}\s+(.*)$/;
+  const noise=/^(IBAN|BIC|Gläubiger-ID|Mand-ID|E2E|RCUR|RINP|OTHR|ABWA|ABWE|Verwendungszweck)/i;
+  let oldS=null, newS=null, m;
+  for(let i=0;i<lines.length;i++){
+    if(oldS==null && /Alter Saldo per/i.test(lines[i]))
+      for(let j=i;j<Math.min(i+3,lines.length);j++){ if(m=lines[j].match(/EUR\s*([+-])\s*([\d.]+,\d{2})/)){ oldS=(m[1]==="-"?-1:1)*num(m[2]); break; } }
+    if(/Neuer Saldo/i.test(lines[i]))
+      for(let j=i;j<Math.min(i+3,lines.length);j++){ if(m=lines[j].match(/EUR\s*([+-])\s*([\d.]+,\d{2})/)){ newS=(m[1]==="-"?-1:1)*num(m[2]); } }
+  }
+  const starts=[]; lines.forEach((l,i)=>{ if(reStart.test(l)) starts.push(i); });
+  const rows=[];
+  starts.forEach((si,k)=>{
+    const end = k+1<starts.length ? starts[k+1] : lines.length;
+    const mm2=lines[si].match(reStart); const dd=mm2[1], mo=mm2[2], vorgang=mm2[3].trim(), sign=mm2[4], amount=num(mm2[5]);
+    let year="", name=""; const ym=(lines[si+1]||"").match(reYearName);
+    if(ym){ year=ym[1]; name=ym[2].trim(); }
+    let zweck="";
+    for(let j=si+2;j<end;j++){ if(/^Verwendungszweck/i.test(lines[j])){ for(let t=j+1;t<end;t++){ if(!noise.test(lines[t])){ zweck=lines[t].trim(); break; } } break; } }
+    const context=lines.slice(si,end).join(" ");
+    rows.push({date: year?`${year}-${mo}-${dd}`:`${dd}.${mo}`, sign, amount, vorgang, name, zweck, context});
+  });
+  return {rows, oldS, newS};
+}
+function suggestKonto(r){
+  const n=(r.name||"").toLowerCase(), z=((r.name||"")+" "+(r.context||"")).toLowerCase(), inc=r.sign==="+";
+  if(inc && /drozdzynski/.test(n)) return "1220";                                   // partner deposit
+  if(inc && /lyall/.test(n)) return "1210";                                         // partner deposit
+  if(/abschlusspost|kontoführung|kontofuehrung|\bentgelt\b|gebühr|gebuehr/.test(z)) return "4970";
+  if(/miete|hofhaus|\braum|albrecht|pacht/.test(z)) return "4200";
+  if(/versicher|police|\br\+v\b|allianz|\baxa\b|\bhuk\b|gothaer|ergo/.test(z)) return "4360";
+  if(/enercity|strom|energie|stadtwerke|e\.on|\beon\b|vattenfall|\bgas\b/.test(z)) return "4240";
+  if(/vodafone|telekom|telefón|telefon|\bo2\b|1&1|mobilfunk|kdnr|internet|fritz/.test(z)) return "4920";
+  if(/capcut|adobe|splice|ableton|waves|native instruments|izotope|plugin|lizenz|subscription|\babo\b|distrokid|landr|\bapp store\b|google play/.test(z)) return "4964";
+  if(inc && /erstattung|rückerstatt|ruckerstatt|gutschrift|refund/.test(z)) return "8603";
+  if(inc && /melino|kontor|believe|labelworx|zebralution|imusician|royalt|\bssl\b|tunecore|ditto/.test(z)) return "8000";
+  return "";
+}
+async function handleFyrstFiles(files){
+  const arr=[...files].filter(f=>/\.pdf$/i.test(f.name)||f.type==="application/pdf");
+  if(!arr.length){ toast("No PDF detected."); return; }
+  if(!window.pdfjsLib){ toast("PDF engine not loaded — check your connection."); return; }
+  let all=[], oldS=null, newS=null;
+  for(const f of arr){
+    try{ const buf=await f.arrayBuffer(); const lines=await extractPdfLines(buf); const p=parseFyrst(lines);
+      all=all.concat(p.rows); if(oldS==null) oldS=p.oldS; if(p.newS!=null) newS=p.newS; }
+    catch(e){ toast(`${f.name}: ${e.message}`); }
+  }
+  if(!all.length){ toast("No bookings found in this PDF."); return; }
+  openFyrstReview(all, arr.length===1?oldS:null, arr.length===1?newS:null);
+}
+function sidePreview(r){ return r.sign==="+" ? `Soll 1200 · Haben ${r.konto||"?"}` : `Soll ${r.konto||"?"} · Haben 1200`; }
+function openFyrstReview(rows, oldS, newS){
+  fyrstQueue=rows.map(r=>({...r, konto:suggestKonto(r)}));
+  const t=document.getElementById("fyTable");
+  t.innerHTML="<thead><tr><th>Date</th><th>Payee / purpose</th><th class='num'>Amount</th><th>Contra-account</th></tr></thead><tbody>"+
+    fyrstQueue.map((r,i)=>`<tr>
+      <td>${(r.date||"").split("-").reverse().join(".")}</td>
+      <td class="fy-desc"><div class="p">${r.name||r.vorgang||""}</div>${r.zweck?`<div class="z">${r.zweck}</div>`:""}</td>
+      <td class="fy-amt ${r.sign==="+"?"pos":"neg"}">${r.sign} ${deMoney(r.amount)}</td>
+      <td><select data-fyi="${i}" class="${r.konto?"":"miss"}"><option value="">— choose —</option>${accountOptions(r.konto)}</select>
+        <div class="fy-side" data-side="${i}">${sidePreview(r)}</div></td></tr>`).join("")+"</tbody>";
+  t.querySelectorAll("[data-fyi]").forEach(sel=>sel.onchange=()=>{ const i=+sel.dataset.fyi; fyrstQueue[i].konto=sel.value; sel.classList.toggle("miss",!sel.value);
+    const sp=t.querySelector('[data-side="'+i+'"]'); if(sp) sp.textContent=sidePreview(fyrstQueue[i]); });
+  const net=fyrstQueue.reduce((s,r)=>s+(r.sign==="+"?1:-1)*r.amount,0);
+  const rec=document.getElementById("fyRecon");
+  if(oldS!=null&&newS!=null){ const diff=Math.abs((oldS+net)-newS), ok=diff<0.005;
+    rec.innerHTML=`<span><b>${fyrstQueue.length}</b> bookings</span><span>Net <b>${deMoney(net)}</b></span><span>Old ${deMoney(oldS)} → New ${deMoney(newS)}</span><span class="${ok?"ok":"bad"}">${ok?"✓ reconciles with statement":"⚠ differs by "+deMoney(diff)}</span>`;
+  } else rec.innerHTML=`<span><b>${fyrstQueue.length}</b> bookings</span><span>Net <b>${deMoney(net)}</b></span>`;
+  document.getElementById("fyrstModal").classList.remove("hidden");
+}
+function closeFyrst(){ document.getElementById("fyrstModal").classList.add("hidden"); fyrstQueue=[]; }
+function confirmFyrstImport(){
+  const missing=fyrstQueue.filter(r=>!r.konto).length;
+  if(missing){ toast(missing+" booking(s) still need a contra-account."); return; }
+  let added=0, dup=0;
+  fyrstQueue.forEach(r=>{
+    const soll=r.sign==="+"?"1200":r.konto, haben=r.sign==="+"?r.konto:"1200";
+    const fkey=`${r.date}|${r.sign}|${r.amount.toFixed(2)}|${(r.name||"").slice(0,24)}`;
+    if(bookings.some(b=>b.fkey===fkey)){ dup++; return; }
+    bookings.push({id:"b"+Date.now()+Math.floor(Math.random()*1e4), date:r.date, soll, haben, amount:Math.round(r.amount*100)/100,
+      text:(r.name||"")+(r.zweck?(" · "+r.zweck):""), beleg:"", source:"fyrst", fkey});
+    added++;
+  });
+  closeFyrst(); renderBooks();
+  toast(`Imported ${added} booking(s)`+(dup?`, skipped ${dup} duplicate(s)`:"")+".", true);
 }
 
 
@@ -1349,6 +1720,21 @@ document.getElementById("ivClose").onclick=closeInvoiceEditor;
 document.getElementById("ivCancel").onclick=closeInvoiceEditor;
 document.getElementById("ivDownload").onclick=downloadInvoice;
 document.getElementById("invModal").addEventListener("click",e=>{ if(e.target.id==="invModal") closeInvoiceEditor(); });
+
+document.getElementById("bkAdd").onclick=addBooking;
+document.getElementById("bkPeriod").onchange=renderBooks;
+document.getElementById("kaAdd").onclick=addAccount;
+
+const fdz=document.getElementById("fyrstDrop"), ffi=document.getElementById("fyrstInput");
+fdz.onclick=(e)=>{ if(e.target.closest(".btn")) return; ffi.click(); };
+ffi.onchange=()=>{ handleFyrstFiles(ffi.files); ffi.value=""; };
+["dragenter","dragover"].forEach(ev=>fdz.addEventListener(ev,e=>{e.preventDefault();fdz.classList.add("drag");}));
+["dragleave","drop"].forEach(ev=>fdz.addEventListener(ev,e=>{e.preventDefault();fdz.classList.remove("drag");}));
+fdz.addEventListener("drop",e=>handleFyrstFiles(e.dataTransfer.files));
+document.getElementById("fyClose").onclick=closeFyrst;
+document.getElementById("fyCancel").onclick=closeFyrst;
+document.getElementById("fyConfirm").onclick=confirmFyrstImport;
+document.getElementById("fyrstModal").addEventListener("click",e=>{ if(e.target.id==="fyrstModal") closeFyrst(); });
 
 document.getElementById("footStamp").textContent="Updated "+new Date().toLocaleDateString("en-US",{day:"2-digit",month:"short",year:"numeric"});
 
