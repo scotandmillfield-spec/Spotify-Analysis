@@ -264,6 +264,9 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 .book-table .jact{text-align:right; white-space:nowrap}
 .book-table tr.locked td{color:var(--muted)}
 .book-table tr.storno td{background:rgba(255,107,138,.05)}
+.book-table tr.irrelevant td{opacity:.55}
+.book-table tr.irrelevant .num{text-decoration:line-through}
+.priv-tag{display:inline-block; font-family:"JetBrains Mono",monospace; font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); border:1px solid var(--line); border-radius:5px; padding:1px 6px; margin-left:8px; vertical-align:1px}
 .lock-ic{width:14px; height:14px; fill:none; stroke:var(--faint); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; vertical-align:-2px; margin-right:6px}
 .book-table .jact .link-btn{margin-right:6px}
 .data-actions{display:flex; gap:10px; flex-wrap:wrap}
@@ -997,7 +1000,7 @@ function rebuildFromState(state){
   bookings = Array.isArray(state.bookings) ? state.bookings.map(b=>({...b})) : [];
   // normalise legacy bookings: ensure a locked flag and a running number
   let maxNo = Number(state.bookingSeq)||0;
-  bookings.forEach(b=>{ if(b.locked===undefined) b.locked=false; if(typeof b.no==="number") maxNo=Math.max(maxNo,b.no); });
+  bookings.forEach(b=>{ if(b.locked===undefined) b.locked=false; if(b.irrelevant===undefined) b.irrelevant=false; if(typeof b.no==="number") maxNo=Math.max(maxNo,b.no); });
   bookings.forEach(b=>{ if(typeof b.no!=="number") b.no=++maxNo; });
   bookingSeq = maxNo;
   editId = null;
@@ -1509,9 +1512,9 @@ function renderBooks(){
   const period=psel.value;
   const inPeriod = period==="all" ? bookings.slice() : bookings.filter(b=>periodOf(b.date)===period);
   const uptoEnd  = period==="all" ? bookings.slice() : bookings.filter(b=>periodOf(b.date)<=period);
-  renderJournal(inPeriod);
-  renderBWA(inPeriod);
-  renderSalden(uptoEnd);
+  renderJournal(inPeriod);                                   // journal shows everything (incl. private)
+  renderBWA(inPeriod.filter(b=>!b.irrelevant));             // BWA ignores private/irrelevant bookings
+  renderSalden(uptoEnd.filter(b=>!b.irrelevant));           // balances ignore them too
   saveState();
 }
 
@@ -1521,23 +1524,29 @@ function renderJournal(list){
   let sumS=0; list.forEach(b=>sumS+=+b.amount);
   const LOCK='<svg class="lock-ic" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0110 0v3"/><rect x="5" y="10" width="14" height="10" rx="2"/></svg>';
   t.innerHTML="<thead><tr><th class='jno'>No.</th><th>Date</th><th>Doc</th><th>Text</th><th>Debit · Soll</th><th>Credit · Haben</th><th class='num'>Amount</th><th></th></tr></thead><tbody>"+
-    (rows.length? rows.map(b=>`<tr class="${b.locked?"locked":""}${b.source==="storno"?" storno":""}">
+    (rows.length? rows.map(b=>`<tr class="${b.locked?"locked":""}${b.source==="storno"?" storno":""}${b.irrelevant?" irrelevant":""}">
         <td class="jno">${b.no!=null?b.no:""}</td>
         <td>${(b.date||"").split("-").reverse().join(".")}</td>
         <td class="acct-tag">${b.beleg||(b.source==="fyrst"?"bank":b.source==="storno"?"storno":"")}</td>
-        <td>${b.text||""}</td>
+        <td>${b.text||""}${b.irrelevant?' <span class="priv-tag">private</span>':""}</td>
         <td class="jkonto"><span class="acct-tag">${b.soll}</span> ${acc(b.soll)?acc(b.soll).name:""}</td>
         <td class="jkonto"><span class="acct-tag">${b.haben}</span> ${acc(b.haben)?acc(b.haben).name:""}</td>
         <td class="num">${deMoney(b.amount)}</td>
         <td class="jact">${ b.locked
             ? `${LOCK}<button class="link-btn" data-storno="${b.id}" title="Reverse with Storno">Storno</button>`
-            : `<button class="link-btn" data-editbk="${b.id}">Edit</button><button class="del-x" data-delbk="${b.id}" title="Delete">&times;</button>` }</td></tr>`).join("")
+            : `<button class="link-btn" data-irr="${b.id}" title="${b.irrelevant?"Count in BWA & balances again":"Exclude from BWA & balances (private)"}">${b.irrelevant?"Mark business":"Mark private"}</button><button class="link-btn" data-editbk="${b.id}">Edit</button><button class="del-x" data-delbk="${b.id}" title="Delete">&times;</button>` }</td></tr>`).join("")
       : `<tr><td colspan="8" style="color:var(--faint); padding:18px 12px">No bookings in this period.</td></tr>`)+
     (rows.length?`<tr class="row-sum"><td colspan="6">Total (Soll = Haben)</td><td class="num">${deMoney(sumS)}</td><td></td></tr>`:"")+
     "</tbody>";
   t.querySelectorAll("[data-delbk]").forEach(b=>b.onclick=()=>deleteBooking(b.dataset.delbk));
   t.querySelectorAll("[data-editbk]").forEach(b=>b.onclick=()=>editBooking(b.dataset.editbk));
   t.querySelectorAll("[data-storno]").forEach(b=>b.onclick=()=>stornoBooking(b.dataset.storno));
+  t.querySelectorAll("[data-irr]").forEach(b=>b.onclick=()=>toggleIrrelevant(b.dataset.irr));
+}
+function toggleIrrelevant(id){
+  const b=bookings.find(x=>x.id===id); if(!b||b.locked) return;
+  b.irrelevant=!b.irrelevant; renderBooks();
+  toast(b.irrelevant?"Marked private — excluded from BWA & balances.":"Marked business — counted again.",true);
 }
 
 function accountFlow(list){   // per account: {soll, haben}
@@ -1580,8 +1589,8 @@ function renderSalden(list){
 /* ---- Fyrst bank statement import ---- */
 let fyrstQueue=[];
 function parseFyrst(lines){
-  const num=s=>parseFloat(s.replace(/\./g,"").replace(",","."));
-  const reStart=/^(\d{2})\.(\d{2})\.\s+\d{2}\.\d{2}\.\s+(.*?)\s+([+-])\s+([\d.]+,\d{2})$/;
+  const num=s=>parseFloat(s.replace(/\s/g,"").replace(/\./g,"").replace(",","."));
+  const reStart=/^(\d{2})\s*\.\s*(\d{2})\s*\.\s+\d{2}\s*\.\s*\d{2}\s*\.\s+(.*?)\s+([+-])\s*([\d.]+,\d{2})$/;
   const reYearName=/^(\d{4})\s+\d{4}\s+(.*)$/;
   const noise=/^(IBAN|BIC|Gläubiger-ID|Mand-ID|E2E|RCUR|RINP|OTHR|ABWA|ABWE|Verwendungszweck)/i;
   let oldS=null, newS=null, m;
@@ -1606,17 +1615,19 @@ function parseFyrst(lines){
   return {rows, oldS, newS};
 }
 function suggestKonto(r){
-  const n=(r.name||"").toLowerCase(), z=((r.name||"")+" "+(r.context||"")).toLowerCase(), inc=r.sign==="+";
-  if(inc && /drozdzynski/.test(n)) return "1220";                                   // partner deposit
-  if(inc && /lyall/.test(n)) return "1210";                                         // partner deposit
-  if(/abschlusspost|kontoführung|kontofuehrung|\bentgelt\b|gebühr|gebuehr/.test(z)) return "4970";
-  if(/miete|hofhaus|\braum|albrecht|pacht/.test(z)) return "4200";
-  if(/versicher|police|\br\+v\b|allianz|\baxa\b|\bhuk\b|gothaer|ergo/.test(z)) return "4360";
-  if(/enercity|strom|energie|stadtwerke|e\.on|\beon\b|vattenfall|\bgas\b/.test(z)) return "4240";
-  if(/vodafone|telekom|telefón|telefon|\bo2\b|1&1|mobilfunk|kdnr|internet|fritz/.test(z)) return "4920";
-  if(/capcut|adobe|splice|ableton|waves|native instruments|izotope|plugin|lizenz|subscription|\babo\b|distrokid|landr|\bapp store\b|google play/.test(z)) return "4964";
-  if(inc && /erstattung|rückerstatt|ruckerstatt|gutschrift|refund/.test(z)) return "8603";
-  if(inc && /melino|kontor|believe|labelworx|zebralution|imusician|royalt|\bssl\b|tunecore|ditto/.test(z)) return "8000";
+  const nameC=(r.name||"").toLowerCase().replace(/\s+/g,"");                        // payee, spaces removed
+  const zc=((r.name||"")+" "+(r.context||"")).toLowerCase().replace(/\s+/g,"");     // full haystack, spaces removed
+  const inc=r.sign==="+";
+  if(inc && /drozdzynski/.test(nameC)) return "1220";                              // partner deposit
+  if(inc && /lyall/.test(nameC)) return "1210";                                    // partner deposit
+  if(/abschlusspost|kontoführung|kontofuehrung|entgelt|gebühr|gebuehr/.test(zc)) return "4970";
+  if(/miete|hofhaus|raumkosten|albrecht|pacht/.test(zc)) return "4200";
+  if(/versicher|police|r\+v|allianz|axa|\bhuk|gothaer|ergo/.test(zc)) return "4360";
+  if(/enercity|strom|energie|stadtwerke|e\.on|vattenfall/.test(zc)) return "4240";
+  if(/vodafone|telekom|telefón|telefon|1&1|mobilfunk|kdnr|fritz/.test(zc)) return "4920";
+  if(/capcut|adobe|splice|ableton|waves|nativeinstruments|izotope|masteringthemix|plugin|lizenz|subscription|distrokid|landr|appstore|googleplay/.test(zc)) return "4964";
+  if(inc && /erstattung|rückerstatt|ruckerstatt|gutschrift|refund/.test(zc)) return "8603";
+  if(inc && /melino|kontor|believe|labelworx|zebralution|imusician|royalt|tunecore|ditto/.test(zc)) return "8000";
   return "";
 }
 async function handleFyrstFiles(files){
