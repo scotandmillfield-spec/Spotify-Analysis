@@ -1590,27 +1590,30 @@ function renderSalden(list){
 let fyrstQueue=[];
 function parseFyrst(lines){
   const num=s=>parseFloat(s.replace(/\s/g,"").replace(/\./g,"").replace(",","."));
-  const reStart=/^(\d{2})\s*\.\s*(\d{2})\s*\.\s+\d{2}\s*\.\s*\d{2}\s*\.\s+(.*?)\s+([+-])\s*([\d.]+,\d{2})$/;
-  const reYearName=/^(\d{4})\s+\d{4}\s+(.*)$/;
+  const ds=s=>s.replace(/\s+/g,"");                                                   // strip ALL spaces (pdf.js sprinkles them, even inside numbers)
+  const reStartD=/^(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})\.(.*?)([+-])([\d.]+,\d{2})$/;   // date.date.<text><sign><amount> on the de-spaced line
+  const reSaldo=/EUR([+-])([\d.]+,\d{2})/;
   const noise=/^(IBAN|BIC|Gläubiger-ID|Mand-ID|E2E|RCUR|RINP|OTHR|ABWA|ABWE|Verwendungszweck)/i;
-  let oldS=null, newS=null, m;
+  let oldS=null, newS=null, m, fallbackYear="";
   for(let i=0;i<lines.length;i++){
-    if(oldS==null && /Alter Saldo per/i.test(lines[i]))
-      for(let j=i;j<Math.min(i+3,lines.length);j++){ if(m=lines[j].match(/EUR\s*([+-])\s*([\d.]+,\d{2})/)){ oldS=(m[1]==="-"?-1:1)*num(m[2]); break; } }
-    if(/Neuer Saldo/i.test(lines[i]))
-      for(let j=i;j<Math.min(i+3,lines.length);j++){ if(m=lines[j].match(/EUR\s*([+-])\s*([\d.]+,\d{2})/)){ newS=(m[1]==="-"?-1:1)*num(m[2]); } }
+    if(oldS==null && /Alter\s*Saldo\s*per/i.test(lines[i]))
+      for(let j=i;j<Math.min(i+3,lines.length);j++){ if(m=ds(lines[j]).match(reSaldo)){ oldS=(m[1]==="-"?-1:1)*num(m[2]); break; } }
+    if(/Neuer\s*Saldo/i.test(lines[i]))
+      for(let j=i;j<Math.min(i+3,lines.length);j++){ if(m=ds(lines[j]).match(reSaldo)){ newS=(m[1]==="-"?-1:1)*num(m[2]); } }
+    if(!fallbackYear && /Kontoauszug/i.test(lines[i])){ const mm=ds(lines[i]).match(/bis\d{2}\.\d{2}\.(\d{4})/); if(mm) fallbackYear=mm[1]; }
   }
-  const starts=[]; lines.forEach((l,i)=>{ if(reStart.test(l)) starts.push(i); });
+  const starts=[]; lines.forEach((l,i)=>{ if(reStartD.test(ds(l))) starts.push(i); });
   const rows=[];
   starts.forEach((si,k)=>{
     const end = k+1<starts.length ? starts[k+1] : lines.length;
-    const mm2=lines[si].match(reStart); const dd=mm2[1], mo=mm2[2], vorgang=mm2[3].trim(), sign=mm2[4], amount=num(mm2[5]);
-    let year="", name=""; const ym=(lines[si+1]||"").match(reYearName);
-    if(ym){ year=ym[1]; name=ym[2].trim(); }
+    const mm2=ds(lines[si]).match(reStartD); const dd=mm2[1], mo=mm2[2], sign=mm2[6], amount=num(mm2[7]);
+    const nx=lines[si+1]||"";                                                          // "<year> <year> <name>"
+    const ym=ds(nx).match(/^(\d{4})/); const year=ym?ym[1]:fallbackYear;
+    const name=nx.replace(/^\s*(?:\d\s*){4}\s*(?:\d\s*){4}\s*/,"").trim();              // drop the two leading years, keep the name spaced for display
     let zweck="";
     for(let j=si+2;j<end;j++){ if(/^Verwendungszweck/i.test(lines[j])){ for(let t=j+1;t<end;t++){ if(!noise.test(lines[t])){ zweck=lines[t].trim(); break; } } break; } }
     const context=lines.slice(si,end).join(" ");
-    rows.push({date: year?`${year}-${mo}-${dd}`:`${dd}.${mo}`, sign, amount, vorgang, name, zweck, context});
+    rows.push({date: year?`${year}-${mo}-${dd}`:`${dd}.${mo}`, sign, amount, vorgang:"", name, zweck, context});
   });
   return {rows, oldS, newS};
 }
