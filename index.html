@@ -267,6 +267,12 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 .book-table tr.irrelevant td{opacity:.55}
 .book-table tr.irrelevant .num{text-decoration:line-through}
 .priv-tag{display:inline-block; font-family:"JetBrains Mono",monospace; font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); border:1px solid var(--line); border-radius:5px; padding:1px 6px; margin-left:8px; vertical-align:1px}
+.asset-card{padding:16px 18px; margin-bottom:14px}
+.asset-head{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px}
+.asset-name{font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:16px}
+.asset-meta{font-size:12.5px; color:var(--muted); margin-top:3px; font-family:"JetBrains Mono",monospace}
+.asset-table{margin-top:4px}
+.asset-table th,.asset-table td{padding:7px 10px}
 .lock-ic{width:14px; height:14px; fill:none; stroke:var(--faint); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; vertical-align:-2px; margin-right:6px}
 .book-table .jact .link-btn{margin-right:6px}
 .data-actions{display:flex; gap:10px; flex-wrap:wrap}
@@ -306,6 +312,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <button class="tab on" data-tab="analytics" type="button">Analytics</button>
       <button class="tab" data-tab="royalties" type="button">Royalties</button>
       <button class="tab" data-tab="invoices" type="button">Invoices</button>
+      <button class="tab" data-tab="assets" type="button">Assets</button>
       <button class="tab" data-tab="books" type="button">Journal / BWA</button>
       <button class="tab tab-gear" data-tab="settings" type="button" title="Settings" aria-label="Settings">
         <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/><path d="M19.4 13a7.6 7.6 0 000-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 00-1.7-1l-.4-2.5H8.8l-.4 2.5a7.6 7.6 0 00-1.7 1l-2.4-1-2 3.4L4.6 11a7.6 7.6 0 000 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 001.7 1l.4 2.5h6.4l.4-2.5a7.6 7.6 0 001.7-1l2.4 1 2-3.4-2-1.6z"/></svg>
@@ -439,6 +446,36 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       </div>
       <div class="inv-filter" id="invFilter"></div>
       <div id="invList"></div>
+    </section>
+  </div>
+
+  <div class="tab-panel" id="tab-assets" hidden>
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">1</span> New asset</h2>
+        <p>Record a fixed asset. Straight-line depreciation runs monthly from the activation date; the activation year counts only from the activation month.</p></div>
+      <div class="panel book-form">
+        <div class="bf-grid">
+          <label>Description<input type="text" id="asName" placeholder="e.g. Studio monitors"></label>
+          <label>Acquisition cost €<input type="number" step="0.01" id="asCost" placeholder="0.00"></label>
+          <label>Useful life (years)<input type="number" step="1" min="1" id="asYears" placeholder="e.g. 3"></label>
+          <label>Activation date<input type="date" id="asDate"></label>
+          <label>Depreciation account<select id="asKonto"></select></label>
+          <label>Asset account<select id="asAsset"></select></label>
+        </div>
+        <div class="bf-foot"><span class="bf-hint" id="asHint"></span><button class="btn amber" id="asAdd" type="button">Add asset</button></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">2</span> Assets &amp; depreciation</h2>
+        <p>Per asset: yearly AfA and remaining book value. Use <b>Book</b> to post a year's depreciation into the journal (and BWA).</p></div>
+      <div id="assetList"></div>
+    </section>
+
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">3</span> Yearly AfA — all assets</h2>
+        <p>Total depreciation per calendar year across all assets.</p></div>
+      <div class="panel tbl-wrap"><table class="mtable" id="afaSummary"></table></div>
     </section>
   </div>
 
@@ -976,7 +1013,7 @@ function serialize(){
     singles:singles.map(s=>({name:s.name,color:s.color,release:s.release,daily:s.series.map(p=>p.s),visible:visible[s.name]!==false})),
     royalties:royaltyTracks.map(t=>({name:t.name,color:t.color,entries:t.entries})),
     statements:statements, labelAddresses:labelAddresses, issuer:issuer,
-    accounts:accounts, bookings:bookings, bookingSeq:bookingSeq};
+    accounts:accounts, bookings:bookings, bookingSeq:bookingSeq, assets:assets};
 }
 function rebuildFromState(state){
   singles=[]; for(const k in visible) delete visible[k];
@@ -997,7 +1034,9 @@ function rebuildFromState(state){
   labelAddresses = (state.labelAddresses && typeof state.labelAddresses==="object") ? state.labelAddresses : {};
   issuer = Object.assign({}, ISSUER_DEFAULT, (state.issuer && typeof state.issuer==="object") ? state.issuer : {});
   if(Array.isArray(state.accounts) && state.accounts.length) accounts = state.accounts.map(a=>({...a}));
+  if(!accounts.some(a=>a.nr==="0420")) accounts.push({nr:"0420",name:"Betriebs- und Geschäftsausstattung",art:"aktiv"});
   bookings = Array.isArray(state.bookings) ? state.bookings.map(b=>({...b})) : [];
+  assets = Array.isArray(state.assets) ? state.assets.map(a=>({...a})) : [];
   // normalise legacy bookings: ensure a locked flag and a running number
   let maxNo = Number(state.bookingSeq)||0;
   bookings.forEach(b=>{ if(b.locked===undefined) b.locked=false; if(b.irrelevant===undefined) b.irrelevant=false; if(typeof b.no==="number") maxNo=Math.max(maxNo,b.no); });
@@ -1029,7 +1068,7 @@ function importBackup(file){
   r.readAsText(file);
 }
 function renderEverything(){
-  renderAll(); renderRoyalties(); renderInvoices(); renderBooks();
+  renderAll(); renderRoyalties(); renderInvoices(); renderBooks(); renderAssets();
   if(typeof renderSettings==="function") renderSettings();
   if(typeof renderKontenplan==="function") renderKontenplan();
 }
@@ -1039,7 +1078,7 @@ function clearAllData(){
   singles=[]; if(typeof visible==="object") for(const k in visible) delete visible[k];
   royaltyTracks=[]; statements=[]; invFilter="all"; labelAddresses={};
   issuer=Object.assign({}, ISSUER_DEFAULT);
-  accounts=ACCOUNTS_SEED.map(a=>({...a})); bookings=[]; bookingSeq=0; editId=null;
+  accounts=ACCOUNTS_SEED.map(a=>({...a})); bookings=[]; bookingSeq=0; editId=null; assets=[];
   renderEverything(); saveState(); toast("All data cleared.",true);
 }
 function updatePersistHint(){
@@ -1361,10 +1400,12 @@ function switchTab(name){
   document.getElementById("tab-analytics").hidden = name!=="analytics";
   document.getElementById("tab-royalties").hidden = name!=="royalties";
   document.getElementById("tab-invoices").hidden = name!=="invoices";
+  document.getElementById("tab-assets").hidden = name!=="assets";
   document.getElementById("tab-books").hidden = name!=="books";
   document.getElementById("tab-settings").hidden = name!=="settings";
   if(name==="royalties") renderRoyalties();
   if(name==="invoices") renderInvoices();
+  if(name==="assets") renderAssets();
   if(name==="books") renderBooks();
   if(name==="settings"){ renderSettings(); renderKontenplan(); }
 }
@@ -1374,6 +1415,7 @@ const ACCOUNTS_SEED=[
   {nr:"8000",name:"Umsatzerlöse",art:"ertrag"},
   {nr:"8603",name:"Erstattungen",art:"ertrag"},
   {nr:"1200",name:"Bank Fyrst",art:"aktiv"},
+  {nr:"0420",name:"Betriebs- und Geschäftsausstattung",art:"aktiv"},
   {nr:"1210",name:"Gesellschafter Lyall",art:"aktiv"},
   {nr:"1220",name:"Gesellschafter Drozdzynski",art:"aktiv"},
   {nr:"4200",name:"Raumkosten",art:"aufwand"},
@@ -1586,7 +1628,104 @@ function renderSalden(list){
     "</tbody>";
 }
 
-/* ---- Fyrst bank statement import ---- */
+/* ================= ASSETS (Anlagenbuchhaltung / AfA) ================= */
+let assets=[];   // {id, name, cost, years, date:"YYYY-MM-DD", afaKonto}
+
+function afaSchedule(a){
+  const cost=Math.round((+a.cost||0)*100)/100, totMonths=(+a.years||0)*12;
+  if(!cost||!totMonths||!a.date) return [];
+  const [y0,m0]=a.date.split("-").map(Number);
+  const monthly=cost/totMonths;
+  const sched=[]; let remaining=totMonths, year=y0, startMonth=m0;
+  while(remaining>0){
+    const months=Math.min(13-startMonth, remaining);
+    sched.push({year, months, afa:Math.round(months*monthly*100)/100});
+    remaining-=months; year++; startMonth=1;
+  }
+  // absorb rounding drift into the final year so the total equals cost exactly
+  const sum=sched.reduce((s,r)=>s+r.afa,0);
+  if(sched.length) sched[sched.length-1].afa=Math.round((sched[sched.length-1].afa+(cost-sum))*100)/100;
+  let cum=0; sched.forEach(r=>{ cum=Math.round((cum+r.afa)*100)/100; r.cum=cum; r.rest=Math.round((cost-cum)*100)/100; });
+  return sched;
+}
+function afaKontoOptions(sel){
+  return accounts.filter(a=>a.art==="aufwand").sort((a,b)=>a.nr.localeCompare(b.nr))
+    .map(a=>`<option value="${a.nr}" ${a.nr===sel?"selected":""}>${a.nr} · ${a.name}</option>`).join("");
+}
+function assetKontoOptions(sel){
+  return accounts.filter(a=>a.art==="aktiv").sort((a,b)=>a.nr.localeCompare(b.nr))
+    .map(a=>`<option value="${a.nr}" ${a.nr===sel?"selected":""}>${a.nr} · ${a.name}</option>`).join("");
+}
+function addAsset(){
+  const name=document.getElementById("asName").value.trim();
+  const cost=parseFloat(document.getElementById("asCost").value);
+  const years=parseInt(document.getElementById("asYears").value);
+  const date=document.getElementById("asDate").value;
+  const afaKonto=document.getElementById("asKonto").value;
+  const assetKonto=document.getElementById("asAsset").value;
+  const hint=document.getElementById("asHint"); const err=m=>{ hint.textContent=m; hint.classList.add("err"); };
+  if(!name) return err("Enter a description.");
+  if(isNaN(cost)||cost<=0) return err("Enter a positive acquisition cost.");
+  if(isNaN(years)||years<=0) return err("Enter the useful life in years.");
+  if(!date) return err("Pick an activation date.");
+  hint.classList.remove("err"); hint.textContent="";
+  assets.push({id:"a"+Date.now()+Math.floor(Math.random()*1000), name, cost:Math.round(cost*100)/100, years, date, afaKonto:afaKonto||"4830", assetKonto:assetKonto||"0420"});
+  document.getElementById("asName").value=""; document.getElementById("asCost").value=""; document.getElementById("asYears").value="";
+  renderAssets(); saveState(); toast("Asset added.",true);
+}
+function deleteAsset(id){ const a=assets.find(x=>x.id===id); if(!a) return; if(!confirm("Delete asset “"+a.name+"”?")) return; assets=assets.filter(x=>x.id!==id); renderAssets(); saveState(); }
+
+function renderAssets(){
+  // depreciation-account select for the form
+  const sel=document.getElementById("asKonto"); if(sel) sel.innerHTML=afaKontoOptions(sel.value||"4830");
+  const aSel=document.getElementById("asAsset"); if(aSel) aSel.innerHTML=assetKontoOptions(aSel.value||"0420");
+  const dt=document.getElementById("asDate"); if(dt && !dt.value) dt.value=new Date().toISOString().slice(0,10);
+  const list=document.getElementById("assetList");
+  if(!assets.length){ list.innerHTML='<div class="panel empty-state">No assets yet. Add one above to see its depreciation schedule.</div>'; renderAfaSummary(); return; }
+  list.innerHTML = assets.slice().sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map(a=>{
+    const sched=afaSchedule(a);
+    const rows=sched.map(r=>`<tr>
+        <td>${r.year}</td><td class="num">${r.months}</td>
+        <td class="num">${deMoney(r.afa)}</td><td class="num">${deMoney(r.rest)}</td>
+        <td class="jact"><button class="link-btn" data-afa="${a.id}|${r.year}|${r.afa}">Book</button></td></tr>`).join("");
+    return `<div class="panel asset-card">
+      <div class="asset-head">
+        <div><div class="asset-name">${a.name}</div>
+          <div class="asset-meta">${deMoney(a.cost)} · ${a.years} yr${a.years>1?"s":""} · from ${(a.date||"").split("-").reverse().join(".")} · AfA <span class="acct-tag">${a.afaKonto}</span> → <span class="acct-tag">${a.assetKonto||"0420"}</span></div></div>
+        <button class="del-x" data-delas="${a.id}" title="Delete asset">&times;</button>
+      </div>
+      <table class="mtable asset-table"><thead><tr><th>Year</th><th class="num">Months</th><th class="num">AfA</th><th class="num">Book value</th><th></th></tr></thead>
+        <tbody>${rows}</tbody></table>
+    </div>`;
+  }).join("");
+  list.querySelectorAll("[data-delas]").forEach(b=>b.onclick=()=>deleteAsset(b.dataset.delas));
+  list.querySelectorAll("[data-afa]").forEach(b=>b.onclick=()=>{ const [id,yr,amt]=b.dataset.afa.split("|"); bookAfA(id,yr,amt); });
+  renderAfaSummary();
+}
+function renderAfaSummary(){
+  const t=document.getElementById("afaSummary"); if(!t) return;
+  const byYear={};
+  assets.forEach(a=>afaSchedule(a).forEach(r=>{ byYear[r.year]=Math.round(((byYear[r.year]||0)+r.afa)*100)/100; }));
+  const years=Object.keys(byYear).sort();
+  if(!years.length){ t.innerHTML="<tbody><tr><td style='color:var(--faint); padding:16px 12px'>No depreciation yet.</td></tr></tbody>"; return; }
+  const total=years.reduce((s,y)=>s+byYear[y],0);
+  t.innerHTML="<thead><tr><th>Year</th><th class='num'>AfA (all assets)</th></tr></thead><tbody>"+
+    years.map(y=>`<tr><td>${y}</td><td class="num">${deMoney(byYear[y])}</td></tr>`).join("")+
+    `<tr class="row-sum"><td>Total</td><td class="num">${deMoney(total)}</td></tr></tbody>`;
+}
+function bookAfA(assetId, year, amount){
+  const a=assets.find(x=>x.id===assetId); if(!a) return;
+  switchTab("books");
+  cancelEdit();
+  document.getElementById("bkDate").value=year+"-12-31";
+  document.getElementById("bkSoll").value=a.afaKonto||"4830";
+  document.getElementById("bkHaben").value=a.assetKonto||"0420";
+  document.getElementById("bkAmount").value=(+amount).toFixed(2);
+  document.getElementById("bkText").value="AfA "+a.name+" "+year;
+  const hint=document.getElementById("bkHint"); hint.classList.remove("err");
+  hint.textContent="AfA prefilled (Soll = depreciation, Haben = asset account) — review and Add booking.";
+  document.getElementById("tab-books").scrollIntoView({behavior:"smooth",block:"start"});
+}
 let fyrstQueue=[];
 function parseFyrst(lines){
   const num=s=>parseFloat(s.replace(/\s/g,"").replace(/\./g,"").replace(",","."));
@@ -1930,6 +2069,7 @@ document.getElementById("bkCancel").onclick=cancelEdit;
 document.getElementById("bkLock").onclick=festschreiben;
 document.getElementById("bkPeriod").onchange=renderBooks;
 document.getElementById("kaAdd").onclick=addAccount;
+document.getElementById("asAdd").onclick=addAsset;
 
 const fdz=document.getElementById("fyrstDrop"), ffi=document.getElementById("fyrstInput");
 fdz.onclick=(e)=>{ if(e.target.closest(".btn")) return; ffi.click(); };
