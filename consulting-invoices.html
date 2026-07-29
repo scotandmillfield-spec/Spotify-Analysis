@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consulting — Time &amp; Invoices</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0E1117; --ink:#0A0D12; --panel:#141925; --panel2:#1A1F2C; --line:#252B39;
+  --text:#E8EBF2; --muted:#9AA3B2; --faint:#5C6678; --amber:#5DB1E6;
+  --T:#52E0A0; --D:#FFB454; --err:#FF6B8A;
+  --shadow:0 14px 40px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 80% -10%, #16203022, transparent), var(--bg); color:var(--text); font-family:Inter,system-ui,sans-serif; -webkit-font-smoothing:antialiased; line-height:1.5}
+.wrap{max-width:1120px; margin:0 auto; padding:26px 24px 80px}
+a{color:var(--amber)}
+
+/* header + tabs */
+header{display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:20px}
+.brand .eyebrow{font-family:"JetBrains Mono",monospace; font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--amber)}
+.brand h1{font-family:"Space Grotesk",sans-serif; font-weight:700; font-size:clamp(24px,4vw,34px); letter-spacing:-.02em; margin:6px 0 0}
+.brand h1 em{font-style:normal; color:var(--amber)}
+.tabs{display:flex; gap:4px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:5px}
+.tab{background:none; border:none; color:var(--muted); font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:13.5px; padding:9px 15px; border-radius:8px; cursor:pointer; white-space:nowrap}
+.tab.on{background:var(--amber); color:#06121c}
+.tab.tab-gear{padding:9px 11px; display:inline-flex; align-items:center}
+.tab.tab-gear svg{stroke:currentColor; fill:none; stroke-width:1.7}
+
+/* sections + panels */
+.section{margin-bottom:26px}
+.sec-head{margin-bottom:14px}
+.sec-head h2{font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:18px; margin:0 0 4px; display:flex; align-items:center; gap:10px}
+.sec-no{display:inline-grid; place-items:center; width:22px; height:22px; border-radius:6px; background:var(--panel2); border:1px solid var(--line); color:var(--amber); font-family:"JetBrains Mono",monospace; font-size:12px}
+.sec-head p{color:var(--muted); font-size:14px; margin:0; max-width:70ch}
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow)}
+.tbl-wrap{overflow-x:auto}
+.hidden{display:none}
+.empty-state{padding:20px 22px; color:var(--faint); font-size:14px}
+
+/* forms */
+.form{padding:18px 20px; display:flex; flex-direction:column; gap:14px}
+.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:13px 16px}
+.form label,.stack label{display:flex; flex-direction:column; gap:6px; font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--faint)}
+input,select{background:var(--ink); border:1px solid var(--line); border-radius:9px; color:var(--text); font-family:Inter; font-size:14px; padding:10px 11px; width:100%}
+input:focus,select:focus{outline:none; border-color:var(--amber)}
+.foot-row{display:flex; align-items:center; gap:14px; justify-content:flex-end}
+.hint{margin-right:auto; font-size:13px; color:var(--muted)}
+.hint.err{color:var(--err)}
+.btn{font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:13.5px; border:1px solid var(--line); background:var(--panel2); color:var(--text); border-radius:10px; padding:10px 16px; cursor:pointer; transition:border-color .15s, transform .05s}
+.btn:hover{border-color:var(--faint)}
+.btn:active{transform:translateY(1px)}
+.btn.amber{background:var(--amber); border-color:var(--amber); color:#06121c}
+.btn.amber:hover{filter:brightness(1.06)}
+.btn.mini{padding:8px 12px; font-size:12.5px}
+.btn.danger{border-color:rgba(255,107,138,.5); color:var(--err); background:none}
+.btn.danger:hover{background:rgba(255,107,138,.1)}
+.btn:disabled{opacity:.45; cursor:default}
+.link-btn{background:none; border:none; color:var(--faint); font-size:12.5px; cursor:pointer; text-decoration:underline; font-family:Inter; padding:4px}
+.link-btn:hover{color:var(--text)}
+.del-x{background:none; border:none; color:var(--faint); cursor:pointer; font-size:16px; line-height:1; padding:2px 6px; border-radius:6px}
+.del-x:hover{color:var(--err); background:rgba(255,107,138,.1)}
+
+/* tables */
+.mtable{width:100%; border-collapse:collapse; font-size:13.5px}
+.mtable th{text-align:left; font-family:"JetBrains Mono",monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); padding:11px 13px; border-bottom:1px solid var(--line); font-weight:600}
+.mtable td{padding:11px 13px; border-bottom:1px solid rgba(37,43,57,.5)}
+.mtable td.num,.mtable th.num{text-align:right; font-family:"JetBrains Mono",monospace}
+.mtable tr:last-child td{border-bottom:none}
+.mtable .row-sum td{font-weight:600; border-top:1px solid var(--line)}
+.tag{font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--muted)}
+.pill{display:inline-flex; align-items:center; gap:6px; font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:12.5px; padding:5px 11px; border-radius:8px}
+.pill.open{color:var(--D); background:rgba(255,180,84,.12); border:1px solid rgba(255,180,84,.4)}
+.pill.paid{color:var(--T); background:rgba(82,224,160,.12); border:1px solid rgba(82,224,160,.4)}
+.pill .ic{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round}
+
+/* month bar + filter */
+.bar{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px}
+.mini-field{font-family:"JetBrains Mono",monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); display:flex; align-items:center; gap:8px}
+.mini-field input,.mini-field select{width:auto; text-transform:none; letter-spacing:0; padding:7px 10px; font-size:13px}
+.filter{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px}
+.fbtn{display:inline-flex; align-items:center; gap:8px; font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:13px; color:var(--muted); background:var(--panel); border:1px solid var(--line); border-radius:9px; padding:8px 13px; cursor:pointer}
+.fbtn.on{color:#06121c; background:var(--amber); border-color:var(--amber)}
+.fcount{font-family:"JetBrains Mono",monospace; font-size:11px; background:rgba(255,255,255,.08); border-radius:20px; padding:1px 7px; min-width:18px; text-align:center}
+.fbtn.on .fcount{background:rgba(0,0,0,.18)}
+
+.rate-note{font-size:12.5px; color:var(--muted); font-family:"JetBrains Mono",monospace}
+.total-strip{display:flex; align-items:baseline; gap:12px; padding:14px 16px; border-top:1px solid var(--line); font-family:"Space Grotesk",sans-serif}
+.total-strip .lab{color:var(--muted); font-size:13px}
+.total-strip .val{font-weight:700; font-size:20px}
+.settings-cols{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px}
+
+#toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); background:var(--panel2); border:1px solid var(--line); color:var(--text); padding:11px 18px; border-radius:10px; font-size:13.5px; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:.2s}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+#toast.good{border-color:rgba(82,224,160,.5)}
+.foot{margin-top:34px; color:var(--faint); font-size:12px; border-top:1px solid var(--line); padding-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="eyebrow">Consulting · Time &amp; Invoices</div>
+      <h1>Advisory <em>Ledger</em></h1>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-tab="projects" type="button">Projects</button>
+      <button class="tab" data-tab="time" type="button">Time</button>
+      <button class="tab" data-tab="invoices" type="button">Invoices</button>
+      <button class="tab tab-gear" data-tab="settings" type="button" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/><path d="M19.4 13a7.6 7.6 0 000-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 00-1.7-1l-.4-2.5H8.8l-.4 2.5a7.6 7.6 0 00-1.7 1l-2.4-1-2 3.4L4.6 11a7.6 7.6 0 000 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 001.7 1l.4 2.5h6.4l.4-2.5a7.6 7.6 0 001.7-1l2.4 1 2-3.4-2-1.6z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== PROJECTS ===== -->
+  <div id="tab-projects">
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">1</span> New project</h2>
+        <p>Master data. The hourly rate is used to bill logged time.</p></div>
+      <div class="panel form">
+        <div class="grid">
+          <label>Project no.<input type="text" id="pNo" placeholder="e.g. P-01"></label>
+          <label>Description<input type="text" id="pName" placeholder="e.g. Strategy advisory"></label>
+          <label>Hourly rate €<input type="number" step="0.01" id="pRate" placeholder="0.00"></label>
+        </div>
+        <div class="foot-row"><span class="hint" id="pHint"></span>
+          <button class="btn" id="pCancel" type="button" style="display:none">Cancel edit</button>
+          <button class="btn amber" id="pAdd" type="button">Add project</button></div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">2</span> Projects</h2></div>
+      <div class="panel tbl-wrap"><table class="mtable" id="projTable"></table></div>
+    </section>
+  </div>
+
+  <!-- ===== TIME ===== -->
+  <div id="tab-time" hidden>
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">1</span> Log work</h2>
+        <p>Record hours (billed at the project's hourly rate) or a one-off flat amount on a date.</p></div>
+      <div class="panel form">
+        <div class="grid">
+          <label>Date<input type="date" id="tDate"></label>
+          <label>Project<select id="tProject"></select></label>
+          <label>Type<select id="tKind"><option value="hours">Hours</option><option value="flat">Flat amount</option></select></label>
+          <label id="tHoursWrap">Hours<input type="number" step="0.25" id="tHours" placeholder="0.00"></label>
+          <label id="tAmountWrap" style="display:none">Amount €<input type="number" step="0.01" id="tAmount" placeholder="0.00"></label>
+          <label>Note<input type="text" id="tNote" placeholder="optional"></label>
+        </div>
+        <div class="foot-row"><span class="hint" id="tHint"></span>
+          <button class="btn" id="tCancelBtn" type="button" style="display:none">Cancel edit</button>
+          <button class="btn amber" id="tAdd" type="button">Add entry</button></div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">2</span> Entries</h2></div>
+      <div class="bar">
+        <label class="mini-field">Month <input type="month" id="tMonth"></label>
+        <label class="mini-field">Project <select id="tFilterProj"></select></label>
+      </div>
+      <div class="panel tbl-wrap"><table class="mtable" id="entryTable"></table></div>
+    </section>
+  </div>
+
+  <!-- ===== INVOICES ===== -->
+  <div id="tab-invoices" hidden>
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">1</span> Monthly invoice</h2>
+        <p>Pick a month; the entries roll up into line items. Create the invoice to generate a PDF and log it below.</p></div>
+      <div class="bar">
+        <label class="mini-field">Month <input type="month" id="invMonth"></label>
+        <button class="btn amber" id="invCreate" type="button">Create invoice</button>
+        <span class="hint" id="invMonthHint"></span>
+      </div>
+      <div class="panel tbl-wrap"><table class="mtable" id="previewTable"></table>
+        <div class="total-strip"><span class="lab">Month total (net)</span><span class="val" id="previewTotal">—</span></div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">2</span> Invoice register</h2>
+        <p>Every issued invoice. Download the PDF again anytime, and mark it paid once settled.</p></div>
+      <div class="filter" id="invFilter"></div>
+      <div class="panel tbl-wrap"><table class="mtable" id="registerTable"></table></div>
+    </section>
+  </div>
+
+  <!-- ===== SETTINGS ===== -->
+  <div id="tab-settings" hidden>
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">§</span> Your details (issuer)</h2>
+        <p>Appears as the letterhead / sender on every invoice.</p></div>
+      <div class="panel form"><div class="settings-cols">
+        <label>Name / business<input type="text" id="isName"></label>
+        <label>Address line<input type="text" id="isLine1"></label>
+        <label>ZIP<input type="text" id="isZip"></label>
+        <label>City<input type="text" id="isCity"></label>
+        <label>Tax no. / VAT ID<input type="text" id="isTax"></label>
+        <label>IBAN<input type="text" id="isIban"></label>
+        <label>BIC<input type="text" id="isBic"></label>
+        <label>Email<input type="text" id="isEmail"></label>
+        <label>Phone<input type="text" id="isPhone"></label>
+      </div></div>
+    </section>
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">§</span> Client (recipient)</h2>
+        <p>The single company you invoice.</p></div>
+      <div class="panel form"><div class="settings-cols">
+        <label>Company<input type="text" id="clName"></label>
+        <label>Address line<input type="text" id="clLine1"></label>
+        <label>ZIP<input type="text" id="clZip"></label>
+        <label>City<input type="text" id="clCity"></label>
+      </div></div>
+    </section>
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">§</span> Invoicing</h2>
+        <p>Numbering and VAT. Set VAT to 0 % if you invoice under § 19 (small-business).</p></div>
+      <div class="panel form"><div class="settings-cols">
+        <label>Invoice no. prefix<input type="text" id="stPrefix"></label>
+        <label>Next number<input type="number" step="1" id="stNext"></label>
+        <label>VAT rate %<input type="number" step="0.1" id="stVat"></label>
+      </div></div>
+    </section>
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">§</span> Data</h2>
+        <p>Everything is stored only in this browser — keep a backup.</p></div>
+      <div class="panel form">
+        <div class="bar" style="margin:0">
+          <button class="btn amber" id="backupBtn" type="button">Backup (JSON)</button>
+          <button class="btn" id="restoreBtn" type="button">Restore…</button>
+          <button class="btn danger" id="clearBtn" type="button">Clear all data</button>
+          <input type="file" id="jsonInput" accept=".json,application/json" hidden>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+const KEY="consultingInvoicesV1";
+const $=id=>document.getElementById(id);
+const todayISO=()=>new Date().toISOString().slice(0,10);
+const curMonth=()=>new Date().toISOString().slice(0,7);
+const CHECK='<svg class="ic" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>';
+
+/* ---------- state ---------- */
+function defaultState(){ return {
+  issuer:{name:"",line1:"",zip:"",city:"",taxNo:"",iban:"",bic:"",email:"",phone:""},
+  client:{name:"",line1:"",zip:"",city:""},
+  settings:{invPrefix:"RE-"+new Date().getFullYear()+"-", invNext:1, vatRate:0, currency:"€"},
+  projects:[], entries:[], invoices:[]
+}; }
+let S=defaultState();
+let canPersist=true;
+try{ const t="__t"; localStorage.setItem(t,"1"); localStorage.removeItem(t); }catch(e){ canPersist=false; }
+function save(){ if(!canPersist) return; try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function load(){ if(!canPersist) return false; try{ const r=localStorage.getItem(KEY); if(!r) return false; const o=JSON.parse(r); S=Object.assign(defaultState(),o);
+  S.settings=Object.assign(defaultState().settings, o.settings||{});
+  S.issuer=Object.assign(defaultState().issuer, o.issuer||{}); S.client=Object.assign(defaultState().client, o.client||{});
+  S.projects=o.projects||[]; S.entries=o.entries||[]; S.invoices=o.invoices||[]; return true; }catch(e){ return false; } }
+
+/* ---------- helpers ---------- */
+function eur(n){ return (Math.round((+n||0)*100)/100).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €"; }
+function num(n,d){ return (Math.round((+n||0)*100)/100).toLocaleString("de-DE",{minimumFractionDigits:d||0,maximumFractionDigits:2}); }
+function proj(id){ return S.projects.find(p=>p.id===id); }
+function projHourly(p){ if(!p) return 0; if(p.hourlyRate!=null) return +p.hourlyRate||0; const hpd=+p.hoursPerDay||0; return hpd>0 ? p.dayRate/hpd : +p.dayRate||0; }
+function entryAmount(e){ if(e.kind==="flat") return +e.amount||0; return (+e.hours||0)*projHourly(proj(e.projectId)); }
+function monthName(m){ if(!m) return ""; const [y,mo]=m.split("-"); return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][(+mo||1)-1]+" "+y; }
+function toast(msg,good){ const t=$("toast"); t.textContent=msg; t.className=(good?"good ":"")+"show"; clearTimeout(toast._t); toast._t=setTimeout(()=>t.className="",2600); }
+
+/* ---------- tabs ---------- */
+function switchTab(name){
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===name));
+  ["projects","time","invoices","settings"].forEach(t=>$("tab-"+t).hidden=(t!==name));
+  if(name==="projects") renderProjects();
+  if(name==="time") renderTime();
+  if(name==="invoices") renderInvoices();
+  if(name==="settings") renderSettings();
+}
+
+/* ---------- projects ---------- */
+let editProjectId=null;
+function renderProjects(){
+  const t=$("projTable");
+  if(!S.projects.length){ t.innerHTML="<tbody><tr><td class='empty-state'>No projects yet. Add one above.</td></tr></tbody>"; return; }
+  t.innerHTML="<thead><tr><th>No.</th><th>Description</th><th class='num'>Hourly rate</th><th></th></tr></thead><tbody>"+
+    S.projects.map(p=>`<tr>
+      <td class="tag">${p.no||""}</td><td>${p.name||""}</td>
+      <td class="num">${eur(projHourly(p))}</td>
+      <td style="text-align:right"><button class="link-btn" data-ep="${p.id}">Edit</button><button class="del-x" data-dp="${p.id}">&times;</button></td></tr>`).join("")+"</tbody>";
+  t.querySelectorAll("[data-ep]").forEach(b=>b.onclick=()=>editProject(b.dataset.ep));
+  t.querySelectorAll("[data-dp]").forEach(b=>b.onclick=()=>{ const p=proj(b.dataset.dp); if(confirm("Delete project “"+(p.name||"")+"”?")){ S.projects=S.projects.filter(x=>x.id!==b.dataset.dp); save(); renderProjects(); } });
+}
+function saveProject(){
+  const no=$("pNo").value.trim(), name=$("pName").value.trim();
+  const rate=parseFloat($("pRate").value);
+  const hint=$("pHint"); const err=m=>{hint.textContent=m; hint.classList.add("err");};
+  if(!name) return err("Enter a description.");
+  if(isNaN(rate)||rate<=0) return err("Enter a positive hourly rate.");
+  hint.classList.remove("err"); hint.textContent="";
+  if(editProjectId){ Object.assign(proj(editProjectId),{no,name,hourlyRate:rate}); toast("Project updated.",true); cancelProjectEdit(); }
+  else { S.projects.push({id:"p"+Date.now()+Math.floor(Math.random()*1e3), no, name, hourlyRate:rate}); clearProjectForm(); toast("Project added.",true); }
+  save(); renderProjects();
+}
+function editProject(id){ const p=proj(id); if(!p) return; editProjectId=id;
+  $("pNo").value=p.no||""; $("pName").value=p.name||""; $("pRate").value=projHourly(p);
+  $("pAdd").textContent="Update project"; $("pCancel").style.display=""; $("pHint").textContent="Editing "+(p.name||""); $("pHint").classList.remove("err");
+}
+function cancelProjectEdit(){ editProjectId=null; $("pAdd").textContent="Add project"; $("pCancel").style.display="none"; clearProjectForm(); $("pHint").textContent=""; }
+function clearProjectForm(){ ["pNo","pName","pRate"].forEach(i=>$(i).value=""); }
+
+/* ---------- project selects ---------- */
+function projectOptions(sel, allLabel){
+  return (allLabel?`<option value="">${allLabel}</option>`:"")+S.projects.map(p=>`<option value="${p.id}" ${p.id===sel?"selected":""}>${p.no?p.no+" · ":""}${p.name}</option>`).join("");
+}
+
+/* ---------- time ---------- */
+let editEntryId=null;
+function syncKindFields(){ const flat=$("tKind").value==="flat"; $("tHoursWrap").style.display=flat?"none":"flex"; $("tAmountWrap").style.display=flat?"flex":"none"; }
+function renderTime(){
+  $("tProject").innerHTML=projectOptions($("tProject").value);
+  if($("tDate") && !$("tDate").value) $("tDate").value=todayISO();
+  if($("tMonth") && !$("tMonth").value) $("tMonth").value=curMonth();
+  $("tFilterProj").innerHTML=projectOptions($("tFilterProj").value,"All projects");
+  syncKindFields();
+  const month=$("tMonth").value, fp=$("tFilterProj").value;
+  const list=S.entries.filter(e=>e.date.slice(0,7)===month && (!fp||e.projectId===fp)).sort((a,b)=>b.date.localeCompare(a.date));
+  const t=$("entryTable");
+  if(!S.projects.length){ t.innerHTML="<tbody><tr><td class='empty-state'>Add a project first, then log time here.</td></tr></tbody>"; return; }
+  let tot=0; list.forEach(e=>tot+=entryAmount(e));
+  t.innerHTML="<thead><tr><th>Date</th><th>Project</th><th>Detail</th><th class='num'>Amount</th><th></th></tr></thead><tbody>"+
+    (list.length? list.map(e=>{ const p=proj(e.projectId);
+      const detail=e.kind==="flat" ? ("Flat"+(e.note?" · "+e.note:"")) : (num(e.hours,2)+" h × "+eur(projHourly(p))+(e.note?" · "+e.note:""));
+      return `<tr><td>${e.date.split("-").reverse().join(".")}</td><td>${p?(p.name):"—"}</td><td>${detail}</td>
+        <td class="num">${eur(entryAmount(e))}</td>
+        <td style="text-align:right"><button class="link-btn" data-ee="${e.id}">Edit</button><button class="del-x" data-de="${e.id}">&times;</button></td></tr>`; }).join("")
+      : "<tr><td colspan='5' class='empty-state'>No entries in this month.</td></tr>")+
+    (list.length?`<tr class="row-sum"><td colspan="3">Month total (net)</td><td class="num">${eur(tot)}</td><td></td></tr>`:"")+"</tbody>";
+  t.querySelectorAll("[data-ee]").forEach(b=>b.onclick=()=>editEntry(b.dataset.ee));
+  t.querySelectorAll("[data-de]").forEach(b=>b.onclick=()=>{ S.entries=S.entries.filter(x=>x.id!==b.dataset.de); save(); renderTime(); });
+}
+function saveEntry(){
+  const date=$("tDate").value, projectId=$("tProject").value, kind=$("tKind").value, note=$("tNote").value.trim();
+  const hint=$("tHint"); const err=m=>{hint.textContent=m; hint.classList.add("err");};
+  if(!date) return err("Pick a date.");
+  if(!projectId) return err("Choose a project.");
+  let hours=null, amount=null;
+  if(kind==="hours"){ hours=parseFloat($("tHours").value); if(isNaN(hours)||hours<=0) return err("Enter hours."); }
+  else { amount=parseFloat($("tAmount").value); if(isNaN(amount)||amount<=0) return err("Enter an amount."); }
+  hint.classList.remove("err"); hint.textContent="";
+  if(editEntryId){ Object.assign(S.entries.find(e=>e.id===editEntryId),{date,projectId,kind,hours,amount,note}); toast("Entry updated.",true); cancelEntryEdit(); }
+  else { S.entries.push({id:"e"+Date.now()+Math.floor(Math.random()*1e3), date, projectId, kind, hours, amount, note}); $("tHours").value=""; $("tAmount").value=""; $("tNote").value=""; toast("Entry added.",true); }
+  save(); renderTime();
+}
+function editEntry(id){ const e=S.entries.find(x=>x.id===id); if(!e) return; editEntryId=id;
+  $("tDate").value=e.date; $("tProject").innerHTML=projectOptions(e.projectId); $("tKind").value=e.kind; syncKindFields();
+  $("tHours").value=e.hours!=null?e.hours:""; $("tAmount").value=e.amount!=null?e.amount:""; $("tNote").value=e.note||"";
+  $("tAdd").textContent="Update entry"; $("tCancelBtn").style.display=""; $("tHint").textContent="Editing entry"; $("tHint").classList.remove("err");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function cancelEntryEdit(){ editEntryId=null; $("tAdd").textContent="Add entry"; $("tCancelBtn").style.display="none"; $("tHours").value=""; $("tAmount").value=""; $("tNote").value=""; $("tHint").textContent=""; }
+
+/* ---------- invoice computation ---------- */
+function monthLines(month){
+  const es=S.entries.filter(e=>e.date.slice(0,7)===month);
+  const lines=[]; const byProj={};
+  es.filter(e=>e.kind==="hours").forEach(e=>{ (byProj[e.projectId]=byProj[e.projectId]||{h:0}).h+=(+e.hours||0); });
+  Object.keys(byProj).forEach(pid=>{ const p=proj(pid); const h=byProj[pid].h; const rate=projHourly(p);
+    lines.push({desc:(p?p.name+(p.no?" ("+p.no+")":""):"Consulting"), qty:h, unit:"h", rate, amount:Math.round(h*rate*100)/100}); });
+  es.filter(e=>e.kind==="flat").sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>{
+    lines.push({desc:(e.note||"Flat fee")+" ("+e.date.split("-").reverse().join(".")+")", qty:null, rate:null, amount:+e.amount||0}); });
+  return lines;
+}
+function renderInvoicePreview(){
+  const month=$("invMonth").value; const lines=monthLines(month);
+  const already=S.invoices.find(i=>i.month===month);
+  $("invMonthHint").textContent = already ? ("Already invoiced as "+already.no+" — creating again issues a new number.") : "";
+  const t=$("previewTable");
+  if(!lines.length){ t.innerHTML="<tbody><tr><td class='empty-state'>No entries in "+monthName(month)+".</td></tr></tbody>"; $("previewTotal").textContent="—"; $("invCreate").disabled=true; return; }
+  $("invCreate").disabled=false;
+  t.innerHTML="<thead><tr><th>Description</th><th class='num'>Qty</th><th class='num'>Rate</th><th class='num'>Amount</th></tr></thead><tbody>"+
+    lines.map(l=>`<tr><td>${l.desc}</td><td class="num">${l.qty!=null?num(l.qty,2)+" h":"—"}</td><td class="num">${l.rate!=null?eur(l.rate):"—"}</td><td class="num">${eur(l.amount)}</td></tr>`).join("")+"</tbody>";
+  $("previewTotal").textContent=eur(lines.reduce((s,l)=>s+l.amount,0));
+}
+function createInvoice(){
+  const month=$("invMonth").value; const lines=monthLines(month);
+  if(!lines.length){ toast("No entries to invoice."); return; }
+  const net=Math.round(lines.reduce((s,l)=>s+l.amount,0)*100)/100;
+  const vatRate=+S.settings.vatRate||0; const vat=Math.round(net*vatRate)/100; const gross=Math.round((net+vat)*100)/100;
+  const no=(S.settings.invPrefix||"")+String(S.settings.invNext||1).padStart(3,"0");
+  const inv={id:"i"+Date.now(), month, no, dateIssued:todayISO(), status:"open", net, vatRate, vat, gross, lines,
+             client:Object.assign({},S.client), issuer:Object.assign({},S.issuer)};
+  S.invoices.push(inv); S.settings.invNext=(+S.settings.invNext||1)+1; save();
+  renderInvoices(); toast("Invoice "+no+" created.",true);
+  try{ generatePDF(inv); }catch(e){ toast("Invoice logged, but PDF failed: "+e.message); }
+}
+let regFilter="all";
+function renderInvoices(){
+  if($("invMonth") && !$("invMonth").value) $("invMonth").value=curMonth();
+  renderInvoicePreview();
+  // filter bar
+  const counts={all:S.invoices.length, open:0, paid:0}; S.invoices.forEach(i=>counts[i.status]=(counts[i.status]||0)+1);
+  $("invFilter").innerHTML=[["all","All"],["open","Open"],["paid","Paid"]].map(([k,l])=>`<button class="fbtn ${regFilter===k?"on":""}" data-f="${k}">${l}<span class="fcount">${counts[k]||0}</span></button>`).join("");
+  $("invFilter").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{ regFilter=b.dataset.f; renderInvoices(); });
+  const t=$("registerTable");
+  const rows=S.invoices.filter(i=>regFilter==="all"||i.status===regFilter).sort((a,b)=>b.no.localeCompare(a.no));
+  if(!S.invoices.length){ t.innerHTML="<tbody><tr><td class='empty-state'>No invoices yet.</td></tr></tbody>"; return; }
+  t.innerHTML="<thead><tr><th>No.</th><th>Month</th><th>Issued</th><th class='num'>Net</th><th class='num'>Total</th><th>Status</th><th></th></tr></thead><tbody>"+
+    (rows.length? rows.map(i=>`<tr>
+      <td class="tag">${i.no}</td><td>${monthName(i.month)}</td><td>${i.dateIssued.split("-").reverse().join(".")}</td>
+      <td class="num">${eur(i.net)}</td><td class="num">${eur(i.gross)}</td>
+      <td>${i.status==="paid"?`<span class="pill paid">${CHECK} Paid</span>`:`<span class="pill open">Open</span>`}</td>
+      <td style="text-align:right; white-space:nowrap">
+        <button class="link-btn" data-pdf="${i.id}">PDF</button>
+        ${i.status==="paid"?`<button class="link-btn" data-reopen="${i.id}">Reopen</button>`:`<button class="link-btn" data-paid="${i.id}">Mark paid</button>`}
+        <button class="del-x" data-di="${i.id}">&times;</button></td></tr>`).join("")
+      : "<tr><td colspan='7' class='empty-state'>Nothing in this filter.</td></tr>")+"</tbody>";
+  t.querySelectorAll("[data-pdf]").forEach(b=>b.onclick=()=>{ const i=S.invoices.find(x=>x.id===b.dataset.pdf); try{ generatePDF(i); }catch(e){ toast("PDF failed: "+e.message); } });
+  t.querySelectorAll("[data-paid]").forEach(b=>b.onclick=()=>setStatus(b.dataset.paid,"paid"));
+  t.querySelectorAll("[data-reopen]").forEach(b=>b.onclick=()=>setStatus(b.dataset.reopen,"open"));
+  t.querySelectorAll("[data-di]").forEach(b=>b.onclick=()=>{ const i=S.invoices.find(x=>x.id===b.dataset.di); if(confirm("Delete invoice "+i.no+" from the register? (The PDF you already sent is unaffected.)")){ S.invoices=S.invoices.filter(x=>x.id!==b.dataset.di); save(); renderInvoices(); } });
+}
+function setStatus(id,st){ const i=S.invoices.find(x=>x.id===id); if(i){ i.status=st; save(); renderInvoices(); } }
+
+/* ---------- settings ---------- */
+function bindSetting(id, obj, key, isNum){
+  const el=$(id); el.value=(obj[key]!=null?obj[key]:"");
+  el.oninput=()=>{ obj[key]= isNum ? (parseFloat(el.value)||0) : el.value; save(); };
+}
+function renderSettings(){
+  const I=S.issuer, C=S.client, T=S.settings;
+  bindSetting("isName",I,"name"); bindSetting("isLine1",I,"line1"); bindSetting("isZip",I,"zip"); bindSetting("isCity",I,"city");
+  bindSetting("isTax",I,"taxNo"); bindSetting("isIban",I,"iban"); bindSetting("isBic",I,"bic"); bindSetting("isEmail",I,"email"); bindSetting("isPhone",I,"phone");
+  bindSetting("clName",C,"name"); bindSetting("clLine1",C,"line1"); bindSetting("clZip",C,"zip"); bindSetting("clCity",C,"city");
+  bindSetting("stPrefix",T,"invPrefix"); bindSetting("stNext",T,"invNext",true); bindSetting("stVat",T,"vatRate",true);
+}
+
+/* ---------- PDF ---------- */
+function generatePDF(inv){
+  if(!window.jspdf||!window.jspdf.jsPDF) throw new Error("PDF engine not loaded");
+  const { jsPDF }=window.jspdf; const doc=new jsPDF({unit:"mm",format:"a4"});
+  const I=inv.issuer||S.issuer, C=inv.client||S.client, cur="€";
+  const L=20, R=190, W=R-L; let y=22;
+  const money=n=>(Math.round((+n||0)*100)/100).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})+" "+cur;
+  doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(20,20,20);
+  doc.text(I.name||"Your name", L, y); y+=6;
+  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(90,90,90);
+  const sender=[I.line1, [I.zip,I.city].filter(Boolean).join(" "), I.email, I.phone].filter(Boolean);
+  sender.forEach(s=>{ doc.text(s, L, y); y+=4.4; });
+  // recipient
+  y=48; doc.setTextColor(120,120,120); doc.setFontSize(8); doc.text("INVOICE TO", L, y); y+=5;
+  doc.setTextColor(20,20,20); doc.setFontSize(10); doc.setFont("helvetica","bold"); doc.text(C.name||"Client", L, y); y+=5;
+  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(70,70,70);
+  [C.line1,[C.zip,C.city].filter(Boolean).join(" ")].filter(Boolean).forEach(s=>{ doc.text(s,L,y); y+=4.4; });
+  // meta (right)
+  doc.setFontSize(9); doc.setTextColor(70,70,70);
+  const mx=R-60;
+  doc.setFont("helvetica","bold"); doc.setTextColor(20,20,20); doc.setFontSize(13); doc.text("Invoice", R, 50, {align:"right"});
+  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(70,70,70);
+  doc.text("No.  "+inv.no, R, 58, {align:"right"});
+  doc.text("Date  "+inv.dateIssued.split("-").reverse().join("."), R, 63, {align:"right"});
+  doc.text("Period  "+monthName(inv.month), R, 68, {align:"right"});
+  // table
+  y=86;
+  doc.setDrawColor(210,210,210); doc.setFillColor(245,246,248);
+  doc.setFont("helvetica","bold"); doc.setFontSize(8.5); doc.setTextColor(90,90,90);
+  const cQty=R-70, cRate=R-40, cAmt=R;
+  doc.text("DESCRIPTION", L, y); doc.text("QTY", cQty, y, {align:"right"}); doc.text("RATE", cRate, y, {align:"right"}); doc.text("AMOUNT", cAmt, y, {align:"right"});
+  y+=3; doc.line(L,y,R,y); y+=6;
+  doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor(30,30,30);
+  inv.lines.forEach(l=>{
+    const dl=doc.splitTextToSize(l.desc, W-70); doc.text(dl, L, y);
+    doc.text(l.qty!=null?(l.qty.toLocaleString("de-DE",{maximumFractionDigits:2})+" h"):"—", cQty, y, {align:"right"});
+    doc.text(l.rate!=null?money(l.rate):"—", cRate, y, {align:"right"});
+    doc.text(money(l.amount), cAmt, y, {align:"right"});
+    y+= Math.max(dl.length*4.6, 6.5);
+  });
+  y+=2; doc.setDrawColor(210,210,210); doc.line(cQty-6,y,R,y); y+=7;
+  const label=(t,v,bold)=>{ doc.setFont("helvetica",bold?"bold":"normal"); doc.setTextColor(bold?20:80,bold?20:80,bold?20:80); doc.setFontSize(bold?11:9.5); doc.text(t,cRate,y,{align:"right"}); doc.text(v,cAmt,y,{align:"right"}); y+=bold?7:5.4; };
+  if((+inv.vatRate||0)>0){ label("Net", money(inv.net)); label("VAT "+num(inv.vatRate)+"%", money(inv.vat)); label("Total", money(inv.gross), true); }
+  else { label("Net", money(inv.net)); doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(120,120,120); doc.text("VAT not applicable under § 19 (1) UStG", cAmt, y, {align:"right"}); y+=6; label("Total", money(inv.gross), true); }
+  // payment + footer
+  y+=8; doc.setDrawColor(230,230,230); doc.line(L,y,R,y); y+=7;
+  doc.setFont("helvetica","bold"); doc.setFontSize(8.5); doc.setTextColor(90,90,90); doc.text("PAYMENT", L, y); y+=5;
+  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(60,60,60);
+  const pay=[]; if(I.iban) pay.push("IBAN  "+I.iban); if(I.bic) pay.push("BIC  "+I.bic); if(I.taxNo) pay.push("Tax no.  "+I.taxNo);
+  pay.forEach(s=>{ doc.text(s,L,y); y+=4.6; });
+  y+=6; doc.setTextColor(110,110,110); doc.setFontSize(9); doc.text("Thank you for your business.", L, y);
+  doc.save((inv.no||"invoice").replace(/[^\w-]+/g,"_")+".pdf");
+}
+
+/* ---------- backup / restore / clear ---------- */
+function backup(){ const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"}); const u=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=u; a.download="consulting-backup-"+todayISO()+".json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),800); }
+function restore(file){ const r=new FileReader(); r.onload=()=>{ try{ const o=JSON.parse(r.result); if(!o||!Array.isArray(o.projects)) throw new Error("not a valid backup"); S=Object.assign(defaultState(),o); S.settings=Object.assign(defaultState().settings,o.settings||{}); S.issuer=Object.assign(defaultState().issuer,o.issuer||{}); S.client=Object.assign(defaultState().client,o.client||{}); save(); renderAll(); toast("Backup restored.",true); }catch(e){ toast("Restore failed: "+e.message); } }; r.onerror=()=>toast("Could not read file."); r.readAsText(file); }
+function clearAll(){ if(!confirm("Delete ALL data — projects, entries and the invoice register? This cannot be undone.")) return; try{ localStorage.removeItem(KEY); }catch(e){} S=defaultState(); renderAll(); save(); toast("All data cleared.",true); }
+
+/* ---------- boot ---------- */
+function renderAll(){ renderProjects(); renderTime(); renderInvoices(); renderSettings(); }
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+$("pAdd").onclick=saveProject; $("pCancel").onclick=cancelProjectEdit;
+$("tAdd").onclick=saveEntry; $("tCancelBtn").onclick=cancelEntryEdit; $("tKind").onchange=syncKindFields;
+$("tMonth").onchange=renderTime; $("tFilterProj").onchange=renderTime;
+$("invMonth").onchange=renderInvoices; $("invCreate").onclick=createInvoice;
+$("backupBtn").onclick=backup; $("restoreBtn").onclick=()=>$("jsonInput").click();
+$("jsonInput").onchange=()=>{ if($("jsonInput").files[0]) restore($("jsonInput").files[0]); $("jsonInput").value=""; };
+$("clearBtn").onclick=clearAll;
+$("foot").innerHTML = canPersist ? "Auto-saved in this browser · nothing is uploaded · keep a backup." : "Auto-save unavailable here — use Backup / Restore to keep your data.";
+load(); renderAll();
+</script>
+</body>
+</html>
