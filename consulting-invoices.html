@@ -445,7 +445,10 @@ function renderSettings(){
   bindSetting("stPrefix",T,"invPrefix"); bindSetting("stNext",T,"invNext",true); bindSetting("stVat",T,"vatRate",true);
 }
 
-/* ---------- PDF ---------- */
+/* ---------- PDF (German invoice) ---------- */
+const MONTHS_DE=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+function monthNameDE(m){ if(!m) return ""; const [y,mo]=m.split("-"); return MONTHS_DE[(+mo||1)-1]+" "+y; }
+function deDate(iso){ return (iso||"").split("-").reverse().join("."); }
 function generatePDF(inv){
   if(!window.jspdf||!window.jspdf.jsPDF) throw new Error("PDF engine not loaded");
   const { jsPDF }=window.jspdf; const doc=new jsPDF({unit:"mm",format:"a4"});
@@ -453,50 +456,49 @@ function generatePDF(inv){
   const L=20, R=190, W=R-L; let y=22;
   const money=n=>(Math.round((+n||0)*100)/100).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})+" "+cur;
   doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(20,20,20);
-  doc.text(I.name||"Your name", L, y); y+=6;
+  doc.text(I.name||"Ihr Name", L, y); y+=6;
   doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(90,90,90);
   const sender=[I.line1, [I.zip,I.city].filter(Boolean).join(" "), I.email, I.phone].filter(Boolean);
   sender.forEach(s=>{ doc.text(s, L, y); y+=4.4; });
   // recipient
-  y=48; doc.setTextColor(120,120,120); doc.setFontSize(8); doc.text("INVOICE TO", L, y); y+=5;
-  doc.setTextColor(20,20,20); doc.setFontSize(10); doc.setFont("helvetica","bold"); doc.text(C.name||"Client", L, y); y+=5;
+  y=48; doc.setTextColor(120,120,120); doc.setFontSize(8); doc.text("RECHNUNG AN", L, y); y+=5;
+  doc.setTextColor(20,20,20); doc.setFontSize(10); doc.setFont("helvetica","bold"); doc.text(C.name||"Kunde", L, y); y+=5;
   doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(70,70,70);
   [C.line1,[C.zip,C.city].filter(Boolean).join(" ")].filter(Boolean).forEach(s=>{ doc.text(s,L,y); y+=4.4; });
   // meta (right)
-  doc.setFontSize(9); doc.setTextColor(70,70,70);
-  const mx=R-60;
-  doc.setFont("helvetica","bold"); doc.setTextColor(20,20,20); doc.setFontSize(13); doc.text("Invoice", R, 50, {align:"right"});
+  doc.setFont("helvetica","bold"); doc.setTextColor(20,20,20); doc.setFontSize(13); doc.text("Rechnung", R, 50, {align:"right"});
   doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(70,70,70);
-  doc.text("No.  "+inv.no, R, 58, {align:"right"});
-  doc.text("Date  "+inv.dateIssued.split("-").reverse().join("."), R, 63, {align:"right"});
-  doc.text("Period  "+monthName(inv.month), R, 68, {align:"right"});
+  doc.text("Nr.  "+inv.no, R, 58, {align:"right"});
+  doc.text("Datum  "+deDate(inv.dateIssued), R, 63, {align:"right"});
+  doc.text("Leistungszeitraum  "+monthNameDE(inv.month), R, 68, {align:"right"});
   // table
   y=86;
-  doc.setDrawColor(210,210,210); doc.setFillColor(245,246,248);
+  doc.setDrawColor(210,210,210);
   doc.setFont("helvetica","bold"); doc.setFontSize(8.5); doc.setTextColor(90,90,90);
   const cQty=R-70, cRate=R-40, cAmt=R;
-  doc.text("DESCRIPTION", L, y); doc.text("QTY", cQty, y, {align:"right"}); doc.text("RATE", cRate, y, {align:"right"}); doc.text("AMOUNT", cAmt, y, {align:"right"});
+  doc.text("LEISTUNG", L, y); doc.text("MENGE", cQty, y, {align:"right"}); doc.text("SATZ", cRate, y, {align:"right"}); doc.text("BETRAG", cAmt, y, {align:"right"});
   y+=3; doc.line(L,y,R,y); y+=6;
   doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor(30,30,30);
   inv.lines.forEach(l=>{
     const dl=doc.splitTextToSize(l.desc, W-70); doc.text(dl, L, y);
-    doc.text(l.qty!=null?(l.qty.toLocaleString("de-DE",{maximumFractionDigits:2})+" h"):"—", cQty, y, {align:"right"});
+    doc.text(l.qty!=null?(l.qty.toLocaleString("de-DE",{maximumFractionDigits:2})+" Std."):"—", cQty, y, {align:"right"});
     doc.text(l.rate!=null?money(l.rate):"—", cRate, y, {align:"right"});
     doc.text(money(l.amount), cAmt, y, {align:"right"});
     y+= Math.max(dl.length*4.6, 6.5);
   });
   y+=2; doc.setDrawColor(210,210,210); doc.line(cQty-6,y,R,y); y+=7;
   const label=(t,v,bold)=>{ doc.setFont("helvetica",bold?"bold":"normal"); doc.setTextColor(bold?20:80,bold?20:80,bold?20:80); doc.setFontSize(bold?11:9.5); doc.text(t,cRate,y,{align:"right"}); doc.text(v,cAmt,y,{align:"right"}); y+=bold?7:5.4; };
-  if((+inv.vatRate||0)>0){ label("Net", money(inv.net)); label("VAT "+num(inv.vatRate)+"%", money(inv.vat)); label("Total", money(inv.gross), true); }
-  else { label("Net", money(inv.net)); doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(120,120,120); doc.text("VAT not applicable under § 19 (1) UStG", cAmt, y, {align:"right"}); y+=6; label("Total", money(inv.gross), true); }
+  if((+inv.vatRate||0)>0){ label("Netto", money(inv.net)); label("zzgl. USt. "+num(inv.vatRate)+" %", money(inv.vat)); label("Gesamtbetrag", money(inv.gross), true); }
+  else { label("Netto", money(inv.net)); doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(120,120,120);
+    doc.text("Gemäß § 19 Abs. 1 UStG wird keine Umsatzsteuer berechnet.", cAmt, y, {align:"right"}); y+=6; label("Gesamtbetrag", money(inv.gross), true); }
   // payment + footer
   y+=8; doc.setDrawColor(230,230,230); doc.line(L,y,R,y); y+=7;
-  doc.setFont("helvetica","bold"); doc.setFontSize(8.5); doc.setTextColor(90,90,90); doc.text("PAYMENT", L, y); y+=5;
+  doc.setFont("helvetica","bold"); doc.setFontSize(8.5); doc.setTextColor(90,90,90); doc.text("ZAHLUNG", L, y); y+=5;
   doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(60,60,60);
-  const pay=[]; if(I.iban) pay.push("IBAN  "+I.iban); if(I.bic) pay.push("BIC  "+I.bic); if(I.taxNo) pay.push("Tax no.  "+I.taxNo);
+  const pay=[]; if(I.iban) pay.push("IBAN  "+I.iban); if(I.bic) pay.push("BIC  "+I.bic); if(I.taxNo) pay.push("Steuernr.  "+I.taxNo);
   pay.forEach(s=>{ doc.text(s,L,y); y+=4.6; });
-  y+=6; doc.setTextColor(110,110,110); doc.setFontSize(9); doc.text("Thank you for your business.", L, y);
-  doc.save((inv.no||"invoice").replace(/[^\w-]+/g,"_")+".pdf");
+  y+=6; doc.setTextColor(110,110,110); doc.setFontSize(9); doc.text("Vielen Dank für die gute Zusammenarbeit.", L, y);
+  doc.save("Rechnung_"+(inv.no||"invoice").replace(/[^\w-]+/g,"_")+".pdf");
 }
 
 /* ---------- backup / restore / clear ---------- */
