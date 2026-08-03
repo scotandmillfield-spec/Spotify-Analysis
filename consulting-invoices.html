@@ -497,7 +497,8 @@ function generatePDF(inv){
   doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(60,60,60);
   const pay=[]; if(I.iban) pay.push("IBAN  "+I.iban); if(I.bic) pay.push("BIC  "+I.bic); if(I.taxNo) pay.push("Steuernr.  "+I.taxNo);
   pay.forEach(s=>{ doc.text(s,L,y); y+=4.6; });
-  y+=6; doc.setTextColor(110,110,110); doc.setFontSize(9); doc.text("Vielen Dank für die gute Zusammenarbeit.", L, y);
+  y+=6; doc.setTextColor(60,60,60); doc.setFontSize(9); doc.text("Der Betrag ist sofort und ohne Abzüge fällig.", L, y); y+=8;
+  doc.setTextColor(110,110,110); doc.text("Vielen Dank für die gute Zusammenarbeit.", L, y);
   doc.save("Rechnung_"+(inv.no||"invoice").replace(/[^\w-]+/g,"_")+".pdf");
 }
 
