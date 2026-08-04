@@ -531,6 +531,16 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <div class="sec-head"><h2><span class="sec-no">5</span> Account balances</h2><p>Debit / credit totals and balance per account, as of the selected period — including bank and partner accounts.</p></div>
       <div class="panel tbl-wrap"><table class="mtable" id="saldenTable"></table></div>
     </section>
+
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">6</span> Year-end PDF export</h2><p>A PDF for the tax advisor (no software access needed): BWA, account balances and one depreciation schedule per asset — on the company letterhead. The journal is not included.</p></div>
+      <div class="panel book-form">
+        <div class="bf-grid" style="grid-template-columns:auto auto 1fr; align-items:end">
+          <label>Assessment year<select id="taxYear"></select></label>
+          <button class="btn amber" id="taxExportBtn" type="button">Export PDF (tax advisor)</button>
+        </div>
+      </div>
+    </section>
   </div>
 
   <div class="tab-panel" id="tab-settings" hidden>
@@ -1557,6 +1567,7 @@ function renderBooks(){
   renderJournal(inPeriod);                                   // journal shows everything (incl. private)
   renderBWA(inPeriod.filter(b=>!b.irrelevant));             // BWA ignores private/irrelevant bookings
   renderSalden(uptoEnd.filter(b=>!b.irrelevant));           // balances ignore them too
+  renderTaxYears();
   saveState();
 }
 
@@ -1626,6 +1637,104 @@ function renderSalden(list){
         <td class="num ${saldo>=0?"pos":"neg"}">${deMoney(saldo)}</td></tr>`;
     }).join("") : `<tr><td colspan="5" style="color:var(--faint); padding:18px 12px">No bookings yet.</td></tr>`)+
     "</tbody>";
+}
+
+/* ================= Year-end PDF export (Steuerberater) ================= */
+function taxYearsAvailable(){
+  const ys=new Set();
+  bookings.forEach(b=>{ const y=(b.date||"").slice(0,4); if(y) ys.add(y); });
+  assets.forEach(a=>afaSchedule(a).forEach(r=>ys.add(String(r.year))));
+  ys.add(String(new Date().getFullYear()));
+  return [...ys].sort();
+}
+function renderTaxYears(){
+  const sel=document.getElementById("taxYear"); if(!sel) return;
+  const cur=sel.value; const years=taxYearsAvailable();
+  sel.innerHTML=years.map(y=>`<option value="${y}">${y}</option>`).join("");
+  const withB=[...new Set(bookings.map(b=>(b.date||"").slice(0,4)).filter(Boolean))].sort();
+  sel.value = (cur && years.includes(cur)) ? cur : (withB.length? withB[withB.length-1] : String(new Date().getFullYear()));
+}
+function bwaData(list){
+  const f=accountFlow(list);
+  const rev=accounts.filter(a=>a.art==="ertrag").map(a=>({nr:a.nr,name:a.name, v:((f[a.nr]||{h:0,s:0}).h-(f[a.nr]||{h:0,s:0}).s)})).filter(x=>Math.abs(x.v)>0.004);
+  const exp=accounts.filter(a=>a.art==="aufwand").map(a=>({nr:a.nr,name:a.name, v:((f[a.nr]||{s:0,h:0}).s-(f[a.nr]||{s:0,h:0}).h)})).filter(x=>Math.abs(x.v)>0.004);
+  const sumR=rev.reduce((s,x)=>s+x.v,0), sumE=exp.reduce((s,x)=>s+x.v,0);
+  return {rev, exp, sumR, sumE, result:sumR-sumE};
+}
+function saldenData(list){
+  const f=accountFlow(list); const order={aktiv:0,passiv:1,ertrag:2,aufwand:3};
+  return accounts.filter(a=>f[a.nr]).sort((a,b)=>(order[a.art]-order[b.art])||a.nr.localeCompare(b.nr)).map(a=>{
+    const x=f[a.nr]; const saldo=(a.art==="aktiv"||a.art==="aufwand")? x.s-x.h : x.h-x.s;
+    return {nr:a.nr,name:a.name,art:ART_LABEL[a.art], s:x.s, h:x.h, saldo};
+  });
+}
+function generateTaxPDF(year){
+  if(!window.jspdf||!window.jspdf.jsPDF){ toast("PDF engine not loaded — check your connection.",false); return; }
+  const yr=String(year); const { jsPDF }=window.jspdf; const doc=new jsPDF({unit:"mm",format:"a4"});
+  const L=20, R=190, money=deMoney;
+  const inYear  = bookings.filter(b=> !b.irrelevant && (b.date||"").slice(0,4)===yr);
+  const uptoEnd = bookings.filter(b=> !b.irrelevant && (b.date||"") <= (yr+"-12-31"));
+  let firstPage=true;
+  function page(title){
+    if(!firstPage) doc.addPage(); firstPage=false;
+    doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(20,20,20); doc.text(issuer.name||"", L, 20);
+    doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(110,110,110);
+    doc.text((issuer.addr||"").replace(/\s*\|\s*/g," · "), L, 25);
+    doc.text("Steuernr. "+(issuer.taxNo||""), L, 29.5);
+    doc.setDrawColor(200,200,200); doc.line(L,33,R,33);
+    doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(20,20,20); doc.text(title, L, 44);
+    doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(90,90,90); doc.text("Veranlagungsjahr "+yr, L, 51);
+    doc.setFontSize(8.5); doc.setTextColor(130,130,130); doc.text("Erstellt am "+todayDE(), R, 51, {align:"right"});
+    return 61;
+  }
+  function thead(y, cols){ doc.setFont("helvetica","bold"); doc.setFontSize(8.5); doc.setTextColor(90,90,90);
+    cols.forEach(c=>doc.text(c.t, c.x, y, {align:c.align||"left"})); y+=2; doc.setDrawColor(200,200,200); doc.line(L,y,R,y); return y+5.5; }
+  function row(y, cells, opt){ opt=opt||{}; doc.setFont("helvetica", opt.bold?"bold":"normal"); doc.setFontSize(opt.size||9.5);
+    const c=opt.color||[35,35,35]; doc.setTextColor(c[0],c[1],c[2]);
+    cells.forEach(cell=>doc.text(String(cell.t), cell.x, y, {align:cell.align||"left"}));
+    if(opt.line){ y+=1.5; doc.setDrawColor(220,220,220); doc.line(L,y,R,y); } return y+(opt.gap||6); }
+
+  // Page 1 — BWA
+  { let y=page("Betriebswirtschaftliche Auswertung (BWA)"); const d=bwaData(inYear); const cA=R;
+    y=thead(y,[{t:"Konto / Bezeichnung",x:L},{t:"Betrag",x:cA,align:"right"}]);
+    y=row(y,[{t:"Erträge",x:L}],{bold:true});
+    if(d.rev.length) d.rev.forEach(x=>{ y=row(y,[{t:x.nr+"  "+x.name,x:L},{t:money(x.v),x:cA,align:"right"}]); });
+    else y=row(y,[{t:"—",x:L},{t:money(0),x:cA,align:"right"}],{color:[150,150,150]});
+    y=row(y,[{t:"Summe Erträge",x:L},{t:money(d.sumR),x:cA,align:"right"}],{bold:true,line:true,gap:8});
+    y=row(y,[{t:"Aufwendungen",x:L}],{bold:true});
+    if(d.exp.length) d.exp.forEach(x=>{ y=row(y,[{t:x.nr+"  "+x.name,x:L},{t:money(x.v),x:cA,align:"right"}]); });
+    else y=row(y,[{t:"—",x:L},{t:money(0),x:cA,align:"right"}],{color:[150,150,150]});
+    y=row(y,[{t:"Summe Aufwendungen",x:L},{t:money(d.sumE),x:cA,align:"right"}],{bold:true,line:true,gap:9});
+    doc.setDrawColor(120,120,120); doc.line(L,y-4,R,y-4);
+    y=row(y,[{t:"Betriebsergebnis",x:L},{t:money(d.result),x:cA,align:"right"}],{bold:true,size:11}); }
+
+  // Page 2 — Kontensaldenliste
+  { let y=page("Kontensaldenliste"); const rows=saldenData(uptoEnd);
+    const cArt=L+72, cS=L+118, cH=L+144, cSal=R;
+    y=thead(y,[{t:"Konto",x:L},{t:"Art",x:cArt},{t:"Soll",x:cS,align:"right"},{t:"Haben",x:cH,align:"right"},{t:"Saldo",x:cSal,align:"right"}]);
+    if(!rows.length) y=row(y,[{t:"Keine Buchungen.",x:L}],{color:[150,150,150]});
+    rows.forEach(r=>{ y=row(y,[{t:r.nr+"  "+r.name,x:L},{t:r.art,x:cArt},{t:money(r.s),x:cS,align:"right"},{t:money(r.h),x:cH,align:"right"},{t:money(r.saldo),x:cSal,align:"right"}]); });
+    doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(130,130,130);
+    doc.text("Salden zum 31.12."+yr+". Als privat/irrelevant markierte Buchungen sind nicht enthalten.", L, y+3); }
+
+  // One page per asset — Anlagespiegel
+  assets.slice().sort((a,b)=>(a.date||"").localeCompare(b.date||"")).forEach(a=>{
+    const sched=afaSchedule(a); if(!sched.length) return;
+    let y=page("Anlagespiegel");
+    doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(25,25,25); doc.text(a.name||"Anlage", L, y); y+=7;
+    doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor(80,80,80);
+    doc.text("Anschaffungswert: "+money(a.cost)+"      Nutzungsdauer: "+a.years+" Jahre      Aktivierung: "+((a.date||"").split("-").reverse().join(".")), L, y); y+=5;
+    doc.text("AfA-Konto: "+(a.afaKonto||"")+"      Anlagenkonto: "+(a.assetKonto||"0420")+"      lineare AfA, monatsgenau", L, y); y+=9;
+    const cM=L+42, cAfa=L+92, cRest=R;
+    y=thead(y,[{t:"Jahr",x:L},{t:"Monate",x:cM,align:"right"},{t:"AfA",x:cAfa,align:"right"},{t:"Restbuchwert",x:cRest,align:"right"}]);
+    sched.forEach(r=>{ y=row(y,[{t:r.year,x:L},{t:String(r.months),x:cM,align:"right"},{t:money(r.afa),x:cAfa,align:"right"},{t:money(r.rest),x:cRest,align:"right"}]); });
+    const totalAfa=sched.reduce((s,r)=>s+r.afa,0);
+    doc.setDrawColor(200,200,200); doc.line(L,y-4,R,y-4);
+    y=row(y,[{t:"Summe AfA",x:L},{t:money(totalAfa),x:cAfa,align:"right"}],{bold:true});
+  });
+
+  doc.save("Steuerberater_Export_"+yr+".pdf");
+  toast("PDF for "+yr+" created.",true);
 }
 
 /* ================= ASSETS (Anlagenbuchhaltung / AfA) ================= */
@@ -2070,6 +2179,7 @@ document.getElementById("bkLock").onclick=festschreiben;
 document.getElementById("bkPeriod").onchange=renderBooks;
 document.getElementById("kaAdd").onclick=addAccount;
 document.getElementById("asAdd").onclick=addAsset;
+document.getElementById("taxExportBtn").onclick=()=>generateTaxPDF(document.getElementById("taxYear").value);
 
 const fdz=document.getElementById("fyrstDrop"), ffi=document.getElementById("fyrstInput");
 fdz.onclick=(e)=>{ if(e.target.closest(".btn")) return; ffi.click(); };
