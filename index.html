@@ -258,6 +258,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 .konto-add input,.konto-add select{background:var(--ink); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:Inter; font-size:13px; padding:8px 10px}
 .konto-add .ka-nr{width:90px} .konto-add .ka-name{flex:1; min-width:150px}
 .book-tools{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+#bwaTable .bwa-delta{color:var(--faint)}
 .book-table .jno{width:44px; font-family:"JetBrains Mono",monospace; color:var(--muted); text-align:left}
 .book-table .jkonto{text-align:left}
 .book-table .num{text-align:right; font-family:"JetBrains Mono",monospace}
@@ -513,9 +514,10 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 
     <section class="section">
       <div class="sec-head book-head">
-        <div><h2><span class="sec-no">3</span> Journal</h2><p>All bookings for the selected period, newest first. Locked entries can only be corrected by a reversal (Storno).</p></div>
+        <div><h2><span class="sec-no">3</span> Journal</h2><p>All bookings of the selected year (optionally one month), newest first. Locked entries can only be corrected by a reversal (Storno).</p></div>
         <div class="book-tools">
-          <label class="mini-field">Period <select id="bkPeriod"></select></label>
+          <label class="mini-field">Year <select id="bkYear"></select></label>
+          <label class="mini-field">Month <select id="bkPeriod"></select></label>
           <button class="btn mini" id="bkLock" type="button">Festschreiben</button>
         </div>
       </div>
@@ -523,12 +525,12 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
     </section>
 
     <section class="section">
-      <div class="sec-head"><h2><span class="sec-no">4</span> BWA</h2><p>Revenue minus expenses, one line per account, for the selected period.</p></div>
+      <div class="sec-head"><h2><span class="sec-no">4</span> BWA</h2><p>Revenue minus expenses, one line per account — the selected year next to the previous year.</p></div>
       <div class="panel tbl-wrap"><table class="mtable" id="bwaTable"></table></div>
     </section>
 
     <section class="section">
-      <div class="sec-head"><h2><span class="sec-no">5</span> Account balances</h2><p>Debit / credit totals and balance per account, as of the selected period — including bank and partner accounts.</p></div>
+      <div class="sec-head"><h2><span class="sec-no">5</span> Account balances</h2><p>Debit / credit totals and balance per account, cumulative up to the end of the selected year / month — including bank and partner accounts.</p></div>
       <div class="panel tbl-wrap"><table class="mtable" id="saldenTable"></table></div>
     </section>
 
@@ -1491,6 +1493,7 @@ function saveBooking(){
   if(soll===haben) return err("Debit and credit must differ.");
   if(isNaN(amount)||amount<=0) return err("Enter a positive amount.");
   hint.classList.remove("err"); hint.textContent="";
+  showBookYear(date);
   if(editId){
     const b=bookings.find(x=>x.id===editId);
     if(b && !b.locked){ Object.assign(b,{date,soll,haben,amount:Math.round(amount*100)/100,text,beleg}); toast("Booking #"+b.no+" updated.",true); }
@@ -1545,7 +1548,16 @@ function festschreiben(){
   bookings.forEach(b=>{ b.locked=true; }); renderBooks(); toast(open+" booking(s) locked.",true);
 }
 
-function bookingPeriods(){ return [...new Set(bookings.map(b=>periodOf(b.date)).filter(Boolean))].sort().reverse(); }
+function yearOf(d){ return (d||"").slice(0,4); }
+function bookingYears(){
+  const ys=new Set(bookings.map(b=>yearOf(b.date)).filter(Boolean)); ys.add(String(new Date().getFullYear()));
+  return [...ys].sort().reverse();
+}
+function bookingPeriods(year){ return [...new Set(bookings.filter(b=>yearOf(b.date)===year).map(b=>periodOf(b.date)).filter(Boolean))].sort().reverse(); }
+function showBookYear(date){   // switch the journal to the year of a (new/edited) booking so it stays visible
+  const y=yearOf(date), ysel=document.getElementById("bkYear");
+  if(y && ysel && ysel.value!==y){ ysel.dataset.want=y; document.getElementById("bkPeriod").value="all"; }
+}
 
 /* ---- the Books tab ---- */
 function renderBooks(){
@@ -1556,16 +1568,26 @@ function renderBooks(){
   if(haben && !haben.value) haben.innerHTML='<option value="">Credit…</option>'+accountOptions();
   else if(haben) haben.innerHTML='<option value="">Credit…</option>'+accountOptions(haben.value);
   const bkDate=document.getElementById("bkDate"); if(bkDate && !bkDate.value) bkDate.value=new Date().toISOString().slice(0,10);
-  // period selector
+  // year selector (default: current year) — the journal only ever shows one year
+  const ysel=document.getElementById("bkYear");
+  const years=bookingYears(); const curY=ysel.dataset.want||ysel.value||String(new Date().getFullYear()); delete ysel.dataset.want;
+  ysel.innerHTML=years.map(y=>`<option value="${y}">${y}</option>`).join("");
+  ysel.value = years.includes(curY) ? curY : years[0];
+  const year=ysel.value;
+  // month selector within that year
   const psel=document.getElementById("bkPeriod");
-  const periods=bookingPeriods(); const cur=psel.value||"all";
-  psel.innerHTML='<option value="all">All / cumulative</option>'+periods.map(p=>`<option value="${p}" ${p===cur?"selected":""}>${monthLabel(p)}</option>`).join("");
-  if(![...(psel.options||[])].some(o=>o.value===cur)) psel.value="all";
+  const periods=bookingPeriods(year); const cur=psel.value||"all";
+  psel.innerHTML='<option value="all">Whole year</option>'+periods.map(p=>`<option value="${p}">${monthLabel(p)}</option>`).join("");
+  psel.value = periods.includes(cur) ? cur : "all";
   const period=psel.value;
-  const inPeriod = period==="all" ? bookings.slice() : bookings.filter(b=>periodOf(b.date)===period);
-  const uptoEnd  = period==="all" ? bookings.slice() : bookings.filter(b=>periodOf(b.date)<=period);
+  const inYear   = bookings.filter(b=>yearOf(b.date)===year);
+  const inPeriod = period==="all" ? inYear : inYear.filter(b=>periodOf(b.date)===period);
+  const endKey   = period==="all" ? year+"-12" : period;
+  const uptoEnd  = bookings.filter(b=>periodOf(b.date)<=endKey);
+  const prevY    = String(+year-1);
   renderJournal(inPeriod);                                   // journal shows everything (incl. private)
-  renderBWA(inPeriod.filter(b=>!b.irrelevant));             // BWA ignores private/irrelevant bookings
+  renderBWA(year, inYear.filter(b=>!b.irrelevant),           // BWA ignores private/irrelevant bookings
+            prevY, bookings.filter(b=>yearOf(b.date)===prevY && !b.irrelevant));
   renderSalden(uptoEnd.filter(b=>!b.irrelevant));           // balances ignore them too
   renderTaxYears();
   saveState();
@@ -1607,21 +1629,27 @@ function accountFlow(list){   // per account: {soll, haben}
   list.forEach(b=>{ (f[b.soll]=f[b.soll]||{s:0,h:0}).s+=+b.amount; (f[b.haben]=f[b.haben]||{s:0,h:0}).h+=+b.amount; });
   return f;
 }
-function renderBWA(list){
-  const t=document.getElementById("bwaTable"); const f=accountFlow(list);
-  const rev=accounts.filter(a=>a.art==="ertrag").map(a=>({a, v:((f[a.nr]||{h:0,s:0}).h-(f[a.nr]||{h:0,s:0}).s)})).filter(x=>Math.abs(x.v)>0.004);
-  const exp=accounts.filter(a=>a.art==="aufwand").map(a=>({a, v:((f[a.nr]||{s:0,h:0}).s-(f[a.nr]||{s:0,h:0}).h)})).filter(x=>Math.abs(x.v)>0.004);
-  const sumR=rev.reduce((s,x)=>s+x.v,0), sumE=exp.reduce((s,x)=>s+x.v,0), result=sumR-sumE;
-  let h="<tbody>";
-  h+=`<tr class="row-sum"><td>Erträge</td><td class="num"></td></tr>`;
-  h+= rev.length? rev.map(x=>`<tr><td><span class="acct-tag">${x.a.nr}</span> ${x.a.name}</td><td class="num">${deMoney(x.v)}</td></tr>`).join("")
-                : `<tr><td style="color:var(--faint)">—</td><td class="num">${deMoney(0)}</td></tr>`;
-  h+=`<tr class="row-sum"><td>Summe Erträge</td><td class="num">${deMoney(sumR)}</td></tr>`;
-  h+=`<tr class="row-sum"><td>Aufwendungen</td><td class="num"></td></tr>`;
-  h+= exp.length? exp.map(x=>`<tr><td><span class="acct-tag">${x.a.nr}</span> ${x.a.name}</td><td class="num">${deMoney(x.v)}</td></tr>`).join("")
-                : `<tr><td style="color:var(--faint)">—</td><td class="num">${deMoney(0)}</td></tr>`;
-  h+=`<tr class="row-sum"><td>Summe Aufwendungen</td><td class="num">${deMoney(sumE)}</td></tr>`;
-  h+=`<tr class="row-result"><td>Betriebsergebnis</td><td class="num ${result>=0?"pos":"neg"}">${deMoney(result)}</td></tr>`;
+function renderBWA(year, list, prevYear, prevList){
+  const t=document.getElementById("bwaTable");
+  const cur=bwaData(list), prev=bwaData(prevList);
+  const val=(rows,nr)=>{ const r=rows.find(x=>x.nr===nr); return r? r.v : 0; };
+  const lines=(kind)=>accounts.filter(a=>a.art===kind && (cur[kind].some(x=>x.nr===a.nr)||prev[kind].some(x=>x.nr===a.nr)))
+    .sort((a,b)=>a.nr.localeCompare(b.nr));
+  const cell=v=>`<td class="num">${deMoney(v)}</td>`;
+  const delta=(c,p)=>{ const d=c-p; return `<td class="num bwa-delta">${Math.abs(d)<0.005?"—":(d>0?"+":"")+deMoney(d)}</td>`; };
+  const block=(kind,title,sumTitle,sumC,sumP)=>{
+    const ls=lines(kind);
+    let h=`<tr class="row-sum"><td>${title}</td><td class="num"></td><td class="num"></td><td class="num"></td></tr>`;
+    h+= ls.length? ls.map(a=>{ const c=val(cur[kind],a.nr), p=val(prev[kind],a.nr);
+          return `<tr><td><span class="acct-tag">${a.nr}</span> ${a.name}</td>${cell(p)}${cell(c)}${delta(c,p)}</tr>`; }).join("")
+        : `<tr><td style="color:var(--faint)">—</td>${cell(0)}${cell(0)}<td class="num bwa-delta">—</td></tr>`;
+    return h+`<tr class="row-sum"><td>${sumTitle}</td>${cell(sumP)}${cell(sumC)}${delta(sumC,sumP)}</tr>`;
+  };
+  let h=`<thead><tr><th>Konto</th><th class="num">${prevYear}</th><th class="num">${year}</th><th class="num">Veränderung</th></tr></thead><tbody>`;
+  h+=block("ertrag","Erträge","Summe Erträge",cur.sumR,prev.sumR);
+  h+=block("aufwand","Aufwendungen","Summe Aufwendungen",cur.sumE,prev.sumE);
+  h+=`<tr class="row-result"><td>Betriebsergebnis</td><td class="num ${prev.result>=0?"pos":"neg"}">${deMoney(prev.result)}</td>
+      <td class="num ${cur.result>=0?"pos":"neg"}">${deMoney(cur.result)}</td>${delta(cur.result,prev.result)}</tr>`;
   t.innerHTML=h+"</tbody>";
 }
 function renderSalden(list){
@@ -1659,7 +1687,7 @@ function bwaData(list){
   const rev=accounts.filter(a=>a.art==="ertrag").map(a=>({nr:a.nr,name:a.name, v:((f[a.nr]||{h:0,s:0}).h-(f[a.nr]||{h:0,s:0}).s)})).filter(x=>Math.abs(x.v)>0.004);
   const exp=accounts.filter(a=>a.art==="aufwand").map(a=>({nr:a.nr,name:a.name, v:((f[a.nr]||{s:0,h:0}).s-(f[a.nr]||{s:0,h:0}).h)})).filter(x=>Math.abs(x.v)>0.004);
   const sumR=rev.reduce((s,x)=>s+x.v,0), sumE=exp.reduce((s,x)=>s+x.v,0);
-  return {rev, exp, sumR, sumE, result:sumR-sumE};
+  return {rev, exp, ertrag:rev, aufwand:exp, sumR, sumE, result:sumR-sumE};
 }
 function saldenData(list){
   const f=accountFlow(list); const order={aktiv:0,passiv:1,ertrag:2,aufwand:3};
@@ -2177,6 +2205,7 @@ document.getElementById("bkAdd").onclick=saveBooking;
 document.getElementById("bkCancel").onclick=cancelEdit;
 document.getElementById("bkLock").onclick=festschreiben;
 document.getElementById("bkPeriod").onchange=renderBooks;
+document.getElementById("bkYear").onchange=()=>{ document.getElementById("bkPeriod").value="all"; renderBooks(); };
 document.getElementById("kaAdd").onclick=addAccount;
 document.getElementById("asAdd").onclick=addAsset;
 document.getElementById("taxExportBtn").onclick=()=>generateTaxPDF(document.getElementById("taxYear").value);
