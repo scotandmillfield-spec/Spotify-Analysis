@@ -518,7 +518,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
         <div class="book-tools">
           <label class="mini-field">Year <select id="bkYear"></select></label>
           <label class="mini-field">Month <select id="bkPeriod"></select></label>
-          <button class="btn mini" id="bkLock" type="button">Festschreiben</button>
+          <button class="btn mini" id="bkLock" type="button" title="Lock all open bookings of the selected year">Festschreiben</button>
         </div>
       </div>
       <div class="panel tbl-wrap"><table class="mtable book-table" id="journalTable"></table></div>
@@ -1540,12 +1540,13 @@ function stornoBooking(id){
     text:"Storno #"+b.no+(b.text?(" · "+b.text):""), beleg:b.beleg||"", source:"storno", locked:true, stornoOf:b.no});
   renderBooks(); toast("Storno for #"+b.no+" posted.",true);
 }
-function festschreiben(){
-  const open=bookings.filter(b=>!b.locked).length;
-  if(!open){ toast("Nothing to lock — all bookings are already locked."); return; }
-  if(!confirm("Lock all "+open+" open booking(s)? Locked bookings can no longer be edited or deleted — only reversed by a Storno.")) return;
-  if(editId) cancelEdit();
-  bookings.forEach(b=>{ b.locked=true; }); renderBooks(); toast(open+" booking(s) locked.",true);
+function festschreiben(){   // locks the open bookings of the selected journal year only
+  const year=document.getElementById("bkYear").value;
+  const open=bookings.filter(b=>!b.locked && yearOf(b.date)===year);
+  if(!open.length){ toast("Nothing to lock — all bookings of "+year+" are already locked."); return; }
+  if(!confirm("Lock all "+open.length+" open booking(s) of "+year+"? Locked bookings can no longer be edited or deleted — only reversed by a Storno.")) return;
+  if(editId && open.some(b=>b.id===editId)) cancelEdit();
+  open.forEach(b=>{ b.locked=true; }); renderBooks(); toast(open.length+" booking(s) of "+year+" locked.",true);
 }
 
 function yearOf(d){ return (d||"").slice(0,4); }
