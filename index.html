@@ -76,6 +76,16 @@ h1 em{font-style:normal; color:var(--amber)}
 .panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius)}
 .section{margin-top:42px}
 .section.hidden{display:none}
+/* collapsible sections: click the heading to fold a section down to its title */
+.sec-head h2.sec-toggle{cursor:pointer; user-select:none}
+.sec-head h2.sec-toggle:hover{color:var(--text)}
+.sec-chev{width:16px; height:16px; flex:none; stroke:var(--faint); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; transition:transform .18s}
+.section.collapsed .sec-chev{transform:rotate(-90deg)}
+.section.collapsed{margin-top:22px}
+.section.collapsed > .sec-head{margin-bottom:0}
+.section.collapsed > .sec-head p,
+.section.collapsed > :not(.sec-head){display:none}
+.sec-fold-all{display:flex; justify-content:flex-end; gap:8px; margin-top:18px}
 .sec-head{display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:16px; flex-wrap:wrap}
 .sec-head h2{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:20px; letter-spacing:-.01em; margin:0; display:flex; align-items:center; gap:11px}
 .sec-no{font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--faint); border:1px solid var(--line); border-radius:6px; padding:2px 7px}
@@ -1515,6 +1525,7 @@ function editBooking(id){
   document.getElementById("bkAdd").textContent="Update booking #"+b.no;
   document.getElementById("bkCancel").style.display="";
   const hint=document.getElementById("bkHint"); hint.classList.remove("err"); hint.textContent="Editing booking #"+b.no;
+  expandSectionOf(document.getElementById("bkDate"));
   document.getElementById("tab-books").scrollIntoView({behavior:"smooth",block:"start"});
 }
 function cancelEdit(){
@@ -1862,6 +1873,7 @@ function bookAfA(assetId, year, amount){
   document.getElementById("bkText").value="AfA "+a.name+" "+year;
   const hint=document.getElementById("bkHint"); hint.classList.remove("err");
   hint.textContent="AfA prefilled (Soll = depreciation, Haben = asset account) — review and Add booking.";
+  expandSectionOf(document.getElementById("bkDate"));
   document.getElementById("tab-books").scrollIntoView({behavior:"smooth",block:"start"});
 }
 let fyrstQueue=[];
@@ -2223,6 +2235,43 @@ document.getElementById("fyConfirm").onclick=confirmFyrstImport;
 document.getElementById("fyrstModal").addEventListener("click",e=>{ if(e.target.id==="fyrstModal") closeFyrst(); });
 
 document.getElementById("footStamp").textContent="Updated "+new Date().toLocaleDateString("en-US",{day:"2-digit",month:"short",year:"numeric"});
+
+/* ---- collapsible sections (fold state is a per-browser view preference, not part of the backup) ---- */
+const FOLD_KEY="singleAnalytics.folded";
+let folded={}; try{ folded=JSON.parse(localStorage.getItem(FOLD_KEY)||"{}")||{}; }catch(e){ folded={}; }
+function sectionKey(sec){
+  const tab=sec.closest('[id^="tab-"]'); const h=sec.querySelector(".sec-head h2");
+  return (tab?tab.id:"main")+":"+(h?h.textContent.replace(/^\s*\d+\s*/,"").trim():"");
+}
+function setFolded(sec, on){
+  sec.classList.toggle("collapsed", on);
+  const h=sec.querySelector(".sec-head h2"); if(h) h.setAttribute("aria-expanded", String(!on));
+  const k=sec.dataset.foldKey; if(on) folded[k]=1; else delete folded[k];
+  try{ localStorage.setItem(FOLD_KEY, JSON.stringify(folded)); }catch(e){}
+}
+function expandSectionOf(el){ const sec=el&&el.closest(".section.collapsed"); if(sec) setFolded(sec,false); }
+function initFolding(){
+  const CHEV='<svg class="sec-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+  document.querySelectorAll(".section").forEach(sec=>{
+    const h=sec.querySelector(":scope > .sec-head h2"); if(!h) return;
+    sec.dataset.foldKey=sectionKey(sec);
+    h.classList.add("sec-toggle"); h.tabIndex=0; h.setAttribute("role","button"); h.title="Click to collapse / expand";
+    h.insertAdjacentHTML("afterbegin", CHEV);
+    const toggle=()=>setFolded(sec, !sec.classList.contains("collapsed"));
+    h.addEventListener("click", toggle);
+    h.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggle(); } });
+    setFolded(sec, !!folded[sec.dataset.foldKey]);
+  });
+  // "Expand all / Collapse all" at the top of every tab
+  document.querySelectorAll('[id^="tab-"]').forEach(tab=>{
+    const secs=[...tab.querySelectorAll(".section")].filter(x=>x.dataset.foldKey); if(secs.length<2) return;
+    const bar=document.createElement("div"); bar.className="sec-fold-all";
+    bar.innerHTML='<button class="btn mini" type="button" data-fold="0">Expand all</button><button class="btn mini" type="button" data-fold="1">Collapse all</button>';
+    bar.querySelectorAll("button").forEach(b=>b.onclick=()=>secs.forEach(x=>setFolded(x, b.dataset.fold==="1")));
+    tab.insertBefore(bar, tab.firstChild);
+  });
+}
+initFolding();
 
 /* boot: restore saved state if present, otherwise seed with demo */
 /* boot: restore saved state if present, otherwise start empty (no demo data) */
