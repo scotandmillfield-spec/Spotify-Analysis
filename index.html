@@ -168,6 +168,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 }
 /* tabs */
 .tabs{display:flex; gap:4px; margin-top:24px; border-bottom:1px solid var(--line)}
+@media(max-width:760px){ .tabs{overflow-x:auto; scrollbar-width:none} .tabs::-webkit-scrollbar{display:none} .tab{flex:none; padding:11px 12px} }
 .tab{font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:600; color:var(--muted);
   background:none; border:none; padding:11px 16px; cursor:pointer; position:relative; transition:.15s; top:1px}
 .tab:hover{color:var(--text)}
@@ -309,6 +310,60 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 .if-cur{color:var(--amber); font-weight:600; text-transform:none}
 .modal-spinner{padding:30px 22px; text-align:center; color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px}
 
+/* GEMA analyzer */
+.g-kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:16px}
+.g-kpi{padding:15px 17px}
+.g-kpi .k{font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint)}
+.g-kpi .v{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:24px; margin-top:4px; letter-spacing:-.01em}
+.g-kpi .d{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--faint); margin-top:2px}
+.g-up{color:#52E0A0} .g-down{color:#FF6B8A}
+.g-chart{position:relative; height:280px; padding:18px 18px 8px}
+.pv-panel{padding:18px 18px 12px}
+.pv-row{display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; margin-bottom:12px}
+.pv-row .ctrl-label{margin-right:0}
+.pv-row select{background:var(--ink); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:Inter; font-size:13px; padding:7px 10px; max-width:220px}
+.f-chip{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; background:rgba(93,177,230,.1); border:1px solid rgba(93,177,230,.35); color:var(--text); border-radius:999px; padding:4px 6px 4px 11px}
+.f-chip b{font-weight:600} .f-chip span{color:var(--muted)}
+.f-chip button{background:none; border:none; color:var(--faint); cursor:pointer; font-size:15px; line-height:1; padding:0 4px}
+.f-chip button:hover{color:#FF6B8A}
+.pv-table{font-size:13px}
+.pv-table th,.pv-table td{padding:8px 11px; white-space:nowrap}
+.pv-table th.num,.pv-table td.num{text-align:right; font-family:'JetBrains Mono',monospace}
+.pv-table th[data-sort]{cursor:pointer} .pv-table th[data-sort]:hover{color:var(--text)}
+.pv-table th .srt{color:var(--amber)}
+.pv-table th .sub,.pv-table td .sub{display:block; font-family:Inter; font-size:10.5px; letter-spacing:0; text-transform:none; color:var(--faint); font-weight:400; margin-top:2px; white-space:normal; max-width:190px}
+.pv-table td:first-child{position:sticky; left:0; background:var(--panel); white-space:normal; min-width:180px; max-width:320px}
+.pv-table th:first-child{position:sticky; left:0; background:var(--panel)}
+.pv-table .pv-lab{cursor:pointer; border-bottom:1px dotted var(--faint)}
+.pv-table .pv-lab:hover{color:var(--amber); border-bottom-color:var(--amber)}
+.pv-table tr.pv-s td{color:var(--muted); font-size:12.5px}
+.pv-table tr.pv-s td:first-child{padding-left:30px}
+.pv-table tr.pv-g.has-sub td{font-weight:600; border-top:1px solid var(--line)}
+.pv-table tfoot td{font-weight:700; border-top:2px solid var(--line); border-bottom:none}
+.pv-table td.tot{color:var(--text); font-weight:600}
+.pv-table td .dp{display:block; font-size:10.5px; color:var(--faint)}
+.pv-table .zero{color:var(--faint)}
+.pv-foot{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:12px}
+.pv-foot .info{margin-right:auto; font-size:12.5px; color:var(--muted)}
+.g-raw td{font-size:12.5px; white-space:nowrap}
+.gl-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px}
+.gl-card{padding:15px 17px; opacity:.72}
+.gl-card.present{opacity:1; border-color:rgba(93,177,230,.45)}
+.gl-top{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.gl-code{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:var(--amber); border:1px solid rgba(93,177,230,.4); border-radius:6px; padding:2px 8px}
+.gl-name{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px}
+.gl-amt{margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--text)}
+.gl-tags{display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 6px}
+.gl-tags span{font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); border:1px solid var(--line); border-radius:5px; padding:1px 6px}
+.gl-card p{margin:0; font-size:13px; color:var(--muted); line-height:1.55}
+.gl-card p b{color:var(--text)}
+.gl-sub{font-family:'Space Grotesk',sans-serif; font-size:15px; margin:26px 0 10px; color:var(--text)}
+.gl-fields{padding:6px 18px}
+.gl-fields div{display:grid; grid-template-columns:210px 1fr; gap:14px; padding:10px 0; border-bottom:1px solid var(--line); font-size:13px}
+.gl-fields div:last-child{border-bottom:none}
+.gl-fields dt{font-weight:600} .gl-fields dd{margin:0; color:var(--muted)}
+@media(max-width:640px){ .gl-fields div{grid-template-columns:1fr; gap:3px} .pv-row select{max-width:100%} }
+.ctrl button:disabled{opacity:.35; cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -325,6 +380,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <button class="tab" data-tab="invoices" type="button">Invoices</button>
       <button class="tab" data-tab="assets" type="button">Assets</button>
       <button class="tab" data-tab="books" type="button">Journal / BWA</button>
+      <button class="tab" data-tab="gema" type="button">GEMA</button>
       <button class="tab tab-gear" data-tab="settings" type="button" title="Settings" aria-label="Settings">
         <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/><path d="M19.4 13a7.6 7.6 0 000-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 00-1.7-1l-.4-2.5H8.8l-.4 2.5a7.6 7.6 0 00-1.7 1l-2.4-1-2 3.4L4.6 11a7.6 7.6 0 000 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 001.7 1l.4 2.5h6.4l.4-2.5a7.6 7.6 0 001.7-1l2.4 1 2-3.4-2-1.6z"/></svg>
       </button>
@@ -555,6 +611,82 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
     </section>
   </div>
 
+  <div class="tab-panel" id="tab-gema" hidden>
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">1</span> GEMA-Abrechnungen</h2>
+        <p>Detailreport (CSV) aus dem GEMA-Onlineportal hier ablegen. Jede Ausschüttung wird als eigener Datensatz gespeichert — so lassen sich spätere Abrechnungen vergleichen.</p></div>
+      <div class="dropzone" id="gemaDrop">
+        <div class="dz-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg></div>
+        <div class="dz-text"><div class="t">GEMA-Detailreport (.csv) hierher ziehen oder klicken</div>
+          <div class="s">Wird nur im Browser gelesen. Gleiche Ausschüttung erneut importiert = aktualisiert statt doppelt.</div></div>
+        <div class="dz-actions"><button class="btn" id="gemaClearBtn" type="button">Alle GEMA-Daten löschen</button></div>
+        <input type="file" id="gemaInput" accept=".csv,text/csv" multiple hidden>
+      </div>
+      <div class="chips" id="gemaChips"></div>
+      <div class="persist-hint" id="gemaHint"></div>
+    </section>
+
+    <div class="empty hidden" id="gemaEmpty"><h3>Noch keine GEMA-Abrechnung geladen</h3><p>Lade oben den Detailreport als CSV — danach erscheinen Überblick, Pivot-Analyse und Einzelpositionen.</p></div>
+
+    <div id="gemaDash">
+      <section class="section">
+        <div class="sec-head"><h2><span class="sec-no">2</span> Überblick</h2>
+          <p>Kennzahlen der jüngsten ausgewählten Ausschüttung im Vergleich zur vorherigen — und alle Ausschüttungen nach Sparte. Aktive Filter aus der Pivot-Analyse gelten auch hier.</p></div>
+        <div class="g-kpis" id="gemaKpis"></div>
+        <div class="panel g-chart"><canvas id="gemaChart"></canvas></div>
+      </section>
+
+      <section class="section">
+        <div class="sec-head"><h2><span class="sec-no">3</span> Pivot-Analyse</h2>
+          <p>Zeilen, Spalten und Wert frei wählen. Ein Klick auf eine Zeilenbeschriftung filtert darauf (Drill-down), ein Klick auf einen Spaltenkopf sortiert.</p></div>
+        <div class="panel pv-panel">
+          <div class="pv-row" id="pvPresets"><span class="ctrl-label">Vorlagen</span></div>
+          <div class="pv-row">
+            <span class="ctrl-label">Zeilen</span><select id="pvRow"></select>
+            <span class="ctrl-label">dann</span><select id="pvRow2"></select>
+            <span class="ctrl-label">Spalten</span><select id="pvCol"></select>
+            <span class="ctrl-label">Wert</span><select id="pvMeasure"></select>
+          </div>
+          <div class="pv-row">
+            <span class="ctrl-label">Anzeige</span>
+            <div class="ctrl" id="pvMode">
+              <button data-mode="val" type="button">Werte</button>
+              <button data-mode="pct" type="button">% der Spalte</button>
+              <button data-mode="delta" type="button">Δ zur Vorspalte</button>
+            </div>
+          </div>
+          <div class="pv-row">
+            <span class="ctrl-label">Filter</span>
+            <span id="pvFilterChips" style="display:contents"></span>
+            <select id="pvFDim"></select><select id="pvFVal"></select>
+            <button class="btn mini" id="pvFAdd" type="button">+ Filter</button>
+          </div>
+          <div class="tbl-wrap"><table class="mtable pv-table" id="pvTable"></table></div>
+          <div class="pv-foot">
+            <span class="info" id="pvInfo"></span>
+            <button class="btn mini" id="pvMore" type="button"></button>
+            <button class="btn mini" id="pvCsv" type="button">CSV exportieren</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="sec-head"><h2><span class="sec-no">4</span> Einzelpositionen</h2>
+          <p>Die Rohzeilen hinter der Pivot-Tabelle — mit denselben Filtern, sortiert nach Betrag.</p></div>
+        <div class="panel tbl-wrap"><table class="mtable g-raw" id="gemaRaw"></table></div>
+        <div class="pv-foot"><span class="info" id="gemaRawInfo"></span><button class="btn mini" id="gemaRawMore" type="button">Weitere anzeigen</button></div>
+      </section>
+    </div>
+
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">?</span> Ausschüttungsarten erklärt</h2>
+        <p>Was hinter den GEMA-Kürzeln steckt. Sparten, die in deinen Abrechnungen vorkommen, sind hervorgehoben — mit deinem Betrag.</p></div>
+      <div class="gl-grid" id="gemaGlossary"></div>
+      <h3 class="gl-sub">Die wichtigsten Spalten des Detailreports</h3>
+      <dl class="panel gl-fields" id="gemaFields"></dl>
+    </section>
+  </div>
+
   <div class="tab-panel" id="tab-settings" hidden>
     <section class="section">
       <div class="sec-head">
@@ -595,14 +727,14 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 
     <section class="section">
       <div class="sec-head"><h2><span class="sec-no">&sect;</span> Data</h2>
-        <p>Backup and restore apply to <b>everything</b> — singles, royalties, statements, invoices, the chart of accounts and the journal. They live only in this browser, so keep a backup.</p></div>
+        <p>Backup and restore apply to <b>everything</b> — singles, royalties, statements, invoices, GEMA statements, the chart of accounts and the journal. They live only in this browser, so keep a backup.</p></div>
       <div class="panel issuer-panel">
         <div class="data-actions">
           <button class="btn amber" id="sBackup" type="button">Backup (download JSON)</button>
           <button class="btn" id="sRestore" type="button">Restore from file…</button>
           <button class="btn danger" id="sClearAll" type="button">Clear all data</button>
         </div>
-        <div class="data-note">“Clear all data” permanently deletes every single, royalty, statement, invoice address and journal booking, and resets the chart of accounts to the default. This cannot be undone — back up first if in doubt.</div>
+        <div class="data-note">“Clear all data” permanently deletes every single, royalty, statement, invoice address, GEMA statement and journal booking, and resets the chart of accounts to the default. This cannot be undone — back up first if in doubt.</div>
       </div>
     </section>
   </div>
@@ -1074,7 +1206,8 @@ function loadState(){
   try{ rebuildFromState(JSON.parse(raw)); return true; }catch(e){ return false; }
 }
 function exportBackup(){
-  const blob=new Blob([JSON.stringify(serialize(),null,2)],{type:"application/json"});
+  const st=serialize(); st.gema=gemaSerialize();
+  const blob=new Blob([JSON.stringify(st,null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob), a=document.createElement("a");
   a.href=url; a.download="single-analytics-backup-"+new Date().toISOString().slice(0,10)+".json"; a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000); toast("Backup downloaded.",true);
@@ -1083,7 +1216,9 @@ function importBackup(file){
   const r=new FileReader();
   r.onload=()=>{ try{ const st=JSON.parse(r.result);
       if(!st||!Array.isArray(st.singles)) throw new Error("not a valid backup file");
-      rebuildFromState(st); renderEverything();
+      rebuildFromState(st);
+      if(st.gema && Array.isArray(st.gema.sets)){ gemaLoadFrom(st.gema); gemaSave(); }   // older backups without GEMA leave it untouched
+      renderEverything();
       toast("Backup restored.",true);
     }catch(e){ toast("Restore failed: "+e.message); } };
   r.onerror=()=>toast("Could not read backup file.");
@@ -1091,12 +1226,14 @@ function importBackup(file){
 }
 function renderEverything(){
   renderAll(); renderRoyalties(); renderInvoices(); renderBooks(); renderAssets();
+  if(typeof renderGema==="function") renderGema();
   if(typeof renderSettings==="function") renderSettings();
   if(typeof renderKontenplan==="function") renderKontenplan();
 }
 function clearAllData(){
-  if(!confirm("Delete ALL data — singles, royalties, statements, invoices and the entire journal? The chart of accounts resets to default. This cannot be undone.")) return;
-  try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+  if(!confirm("Delete ALL data — singles, royalties, statements, invoices, GEMA statements and the entire journal? The chart of accounts resets to default. This cannot be undone.")) return;
+  try{ localStorage.removeItem(STORE_KEY); localStorage.removeItem(GEMA_KEY); }catch(e){}
+  gemaSets=[];
   singles=[]; if(typeof visible==="object") for(const k in visible) delete visible[k];
   royaltyTracks=[]; statements=[]; invFilter="all"; labelAddresses={};
   issuer=Object.assign({}, ISSUER_DEFAULT);
@@ -1424,11 +1561,13 @@ function switchTab(name){
   document.getElementById("tab-invoices").hidden = name!=="invoices";
   document.getElementById("tab-assets").hidden = name!=="assets";
   document.getElementById("tab-books").hidden = name!=="books";
+  document.getElementById("tab-gema").hidden = name!=="gema";
   document.getElementById("tab-settings").hidden = name!=="settings";
   if(name==="royalties") renderRoyalties();
   if(name==="invoices") renderInvoices();
   if(name==="assets") renderAssets();
   if(name==="books") renderBooks();
+  if(name==="gema") renderGema();
   if(name==="settings"){ renderSettings(); renderKontenplan(); }
 }
 
@@ -2235,6 +2374,562 @@ document.getElementById("fyConfirm").onclick=confirmFyrstImport;
 document.getElementById("fyrstModal").addEventListener("click",e=>{ if(e.target.id==="fyrstModal") closeFyrst(); });
 
 document.getElementById("footStamp").textContent="Updated "+new Date().toLocaleDateString("en-US",{day:"2-digit",month:"short",year:"numeric"});
+
+/* ================= GEMA ANALYZER ================= */
+/* Each GEMA payout date (Ausschüttungstermin) is one stored dataset. Rows are kept column-wise with a
+   value dictionary per column, so a ~1,000-row detail report takes only a few dozen KB in localStorage. */
+const GEMA_KEY="singleAnalytics.gema.v1", GEMA_VIEW_KEY="singleAnalytics.gema.view";
+const GEMA_FIELDS={   // canonical field -> accepted CSV headers (normalised: lower-case, umlauts folded, only a-z0-9)
+  termin:["ausschuttungstermin"], abrnr:["abrechnungsnummer"], spcode:["spartencode"], sparte:["spartenkurzel"],
+  bg:["berufsgruppe"], vk:["verteilungskategorie"], betrag:["betrag"], ausfall:["betragausfallzuschlag"],
+  sonst:["betragsonstigezuschlage"], npa:["betragnichtprogrammbelegteranteil"], gebucht:["betraggebucht"],
+  kommsatz:["kommissionssatzin"], komm:["kommissionsbetrag"], rueck:["rucknachverrechnung"],
+  anteil:["anteilprozent"], werknr:["werknummer"], fassung:["fassungsnummer"], titel:["werkfassungstitel"],
+  iswc:["iswc"], isrc:["isrc"], komp:["komponisten"], bearb:["bearbeiter"], lizenz:["lizenznehmer"],
+  katalog:["katalognummer"], traeger:["tragerart"], land:["verkaufsland"], menge:["mengeanzahl"],
+  lizenzwert:["lizenzwertineuro"], njahr:["nutzungsjahr"], qvon:["quartalvon"], qbis:["quartalbis"],
+  sender:["sender"], auff:["anzahlauffuhrungen"], ausstr:["anzahlausstrahlungen"],
+  film:["filmtitelserientitelwerbespottitel","filmtitel"], sendung:["titeldersendung"], verteil:["verteilart"]
+};
+
+/* ---- glossary: GEMA distribution categories (Sparten) ---- */
+const GEMA_SPARTEN=[
+  {code:"MOD S", name:"Music on Demand – Streaming", art:"Streaming", recht:"AR",
+    text:"Einnahmen aus <b>Streamingdiensten</b> wie Spotify, Apple Music, Deezer, Amazon Music, Tidal oder Beatport Streaming. Die GEMA erhält von jedem Dienst Lizenzgebühren je Land und Produkt (Abo, werbefinanziert usw.) und verteilt sie <b>nutzungsbasiert</b> auf die tatsächlich gestreamten Werke. Das ist der <b>Aufführungs- bzw. Zugänglichmachungsanteil</b> (AR) — beim Streaming der größere Teil."},
+  {code:"MOD S VR", name:"Music on Demand – Streaming, Vervielfältigung", art:"Streaming", recht:"VR",
+    text:"Dieselben Streams wie bei MOD S, aber der <b>Vervielfältigungsanteil</b> (VR, „mechanisches Recht“): Für das Streaming werden Kopien auf Servern und Endgeräten angelegt, dafür gibt es einen eigenen Rechte-Topf. Eine Streaming-Nutzung erscheint deshalb fast immer zweimal — einmal als MOD S, einmal als MOD S VR."},
+  {code:"MOD D", name:"Music on Demand – Download", art:"Download", recht:"AR",
+    text:"<b>Bezahl-Downloads</b> (z. B. Beatport, iTunes/Apple, Amazon, Qobuz) — hier der kleinere <b>Aufführungsanteil</b> (AR), weil der Titel online zum Kauf angeboten wird."},
+  {code:"MOD D VR", name:"Music on Demand – Download, Vervielfältigung", art:"Download", recht:"VR",
+    text:"Der <b>Vervielfältigungsanteil</b> (VR) eines Downloads: Der Käufer erhält eine dauerhafte Kopie. Bei Downloads ist das der <b>Hauptteil</b> der Vergütung. Hier ist die Spalte <i>Lizenzwert in Euro</i> meist gefüllt (Wert des einzelnen Verkaufs)."},
+  {code:"GOP", name:"Gemischte Online-Plattformen", art:"Online-Plattformen", recht:"AR",
+    text:"Plattformen mit überwiegend <b>nutzergenerierten Inhalten</b> und Videos — vor allem <b>YouTube</b> (Google), <b>Facebook/Instagram</b> (Meta) oder TikTok. Musik steckt hier in Videos, Reels, Shorts usw. Die Verteilung läuft ähnlich wie bei MOD S nach Nutzungsmeldungen der Plattform; <b>Aufführungsanteil</b> (AR)."},
+  {code:"GOP VR", name:"Gemischte Online-Plattformen, Vervielfältigung", art:"Online-Plattformen", recht:"VR",
+    text:"Der <b>Vervielfältigungsanteil</b> (VR) derselben Plattform-Nutzungen wie bei GOP."},
+  {code:"R", name:"Hörfunk", art:"Radio / TV", recht:"AR",
+    text:"<b>Radio-Ausstrahlungen</b> (öffentlich-rechtlich und privat). Die Verteilung richtet sich nach den gemeldeten Sendeminuten; die Spalten <i>Sender</i> und <i>Anzahl Ausstrahlungen</i> sind dann gefüllt."},
+  {code:"R VR", name:"Hörfunk, Vervielfältigung", art:"Radio / TV", recht:"VR",
+    text:"Vervielfältigungsanteil der Radio-Nutzung (Kopien, die der Sender für die Ausstrahlung anfertigt)."},
+  {code:"FS", name:"Fernsehen", art:"Radio / TV", recht:"AR",
+    text:"<b>Fernseh-Ausstrahlungen</b> von Musik in Sendungen, als Hintergrund- oder Titelmusik."},
+  {code:"FS VR", name:"Fernsehen, Vervielfältigung", art:"Radio / TV", recht:"VR",
+    text:"Vervielfältigungsanteil der Fernseh-Nutzung."},
+  {code:"T FS", name:"Tonfilm im Fernsehen", art:"Radio / TV", recht:"AR",
+    text:"Musik in <b>Filmen, Serien und Werbespots</b>, die im Fernsehen laufen (Film- und Auftragsmusik). Dann sind die Film-/Serientitel-Spalten gefüllt."},
+  {code:"T FS VR", name:"Tonfilm im Fernsehen, Vervielfältigung", art:"Radio / TV", recht:"VR",
+    text:"Vervielfältigungsanteil von Musik in Filmen, Serien und Spots im Fernsehen."},
+  {code:"T", name:"Tonfilm (Kino)", art:"Radio / TV", recht:"AR",
+    text:"Musik in <b>Kinofilmen</b> bei der Vorführung im Kino."},
+  {code:"U", name:"Unterhaltungsmusik – Live", art:"Live & Veranstaltungen", recht:"AR",
+    text:"<b>Live-Aufführungen</b> auf Konzerten, Festivals, Stadtfesten usw. Grundlage ist die vom Veranstalter bzw. von dir eingereichte <b>Setlist</b> (Musikfolge)."},
+  {code:"E", name:"Ernste Musik – Live", art:"Live & Veranstaltungen", recht:"AR",
+    text:"Live-Aufführungen von Werken der „ernsten Musik“ (Klassik, Neue Musik) mit eigenem Wertungsverfahren."},
+  {code:"M", name:"Mechanische Wiedergabe", art:"Live & Veranstaltungen", recht:"AR",
+    text:"Wiedergabe von <b>Tonträgern bzw. Dateien in Veranstaltungen</b> und Betrieben (z. B. Hintergrundmusik, Events ohne Live-Band)."},
+  {code:"DK", name:"Diskotheken & Clubs", art:"Live & Veranstaltungen", recht:"AR",
+    text:"Musik, die in <b>Clubs und Diskotheken</b> von DJs gespielt wird. Die Verteilung stützt sich auf Musikerkennung in ausgewählten Clubs (Monitoring) — für elektronische Musik oft relevant."},
+  {code:"DK VR", name:"Diskotheken & Clubs, Vervielfältigung", art:"Live & Veranstaltungen", recht:"VR",
+    text:"Vervielfältigungsanteil der Club-Nutzung (Kopien, die DJs für ihre Sets anlegen)."},
+  {code:"PHO VR", name:"Tonträger (CD, Vinyl)", art:"Tonträger", recht:"VR",
+    text:"<b>Herstellung physischer Tonträger</b> (CD, Vinyl, Kassette). Pro gepresstem bzw. verkauftem Exemplar wird eine Lizenz fällig."},
+  {code:"BT VR", name:"Bildtonträger (DVD, Blu-ray)", art:"Tonträger", recht:"VR",
+    text:"Musik auf <b>DVDs, Blu-rays</b> und anderen Bildtonträgern."}
+];
+const GEMA_SPARTE_MAP=Object.fromEntries(GEMA_SPARTEN.map(s=>[s.code,s]));
+function gemaInfo(code){
+  const c=(code||"").trim().toUpperCase();
+  if(GEMA_SPARTE_MAP[c]) return GEMA_SPARTE_MAP[c];
+  const vr=/\sVR$/.test(c), base=GEMA_SPARTE_MAP[c.replace(/\sVR$/,"")];
+  return {code:c||"?", name:base?base.name+(vr?", Vervielfältigung":""):"Unbekannte Sparte", art:base?base.art:"Sonstiges", recht:vr?"VR":"AR",
+    text:base?base.text:"Für dieses Kürzel ist noch keine Erklärung hinterlegt — siehe GEMA-Verteilungsplan oder Mitgliederservice."};
+}
+const GEMA_RECHT={AR:"Aufführungsrecht (AR)", VR:"Vervielfältigungsrecht (VR)", "–":"–"};
+const GEMA_BG={"1":"1 · Komponist","2":"2 · Textdichter","3":"3 · Verlagsanteil"};
+const GEMA_FIELD_HELP=[
+  ["Ausschüttungstermin","Stichtag der Auszahlung (z. B. 01.10.). Pro Termin legt der Analyzer einen Datensatz an."],
+  ["Abrechnungsnummer","Interne Nummer je Sparten-Abrechnung — pro Ausschüttung gibt es meist eine Nummer je Sparte."],
+  ["Spartencode / Spartenkürzel","Die Ausschüttungsart, also woher das Geld kommt (siehe Karten oben)."],
+  ["Berufsgruppe","In welcher Rolle du am Werk beteiligt bist: 1 = Komponist, 2 = Textdichter, 3 = Verlagsanteil. Werke ohne Verlag: Bei der Online-Verteilung erhalten die Urheber den Verlagsanteil anteilig selbst — deshalb erscheinen viele Positionen doppelt (Gruppe 1 und 3). Die Zuordnung von Code 3 ist aus den Daten abgeleitet; im Zweifel beim GEMA-Mitgliederservice bestätigen."],
+  ["Betrag","Grundbetrag, der nach dem Verteilungsplan auf deinen Anteil entfällt."],
+  ["Betrag sonstige Zuschläge","Zusätzliche Beträge, die die GEMA auf den Grundbetrag aufschlägt (z. B. aus nicht zuordenbaren Einnahmen, Zinsen oder Wertungszuschlägen). Im Analyzer zusammen mit dem Ausfallzuschlag als „Zuschläge“."],
+  ["Betrag gebucht","Was tatsächlich auf deinem GEMA-Konto gutgeschrieben wird — etwa Betrag + Zuschläge. <b>Das ist die wichtigste Zahl</b> und der Standardwert der Pivot-Tabelle."],
+  ["Anteil Prozent","Dein Anteil am Werk in dieser Berufsgruppe laut Werkanmeldung (z. B. 25 % bei vier gleichberechtigten Urhebern)."],
+  ["Werknummer / Fassung / Titel / ISWC","Identifikation des Werks bei der GEMA; ISWC ist die internationale Werknummer."],
+  ["ISRC","Kennung der konkreten Aufnahme (Master). Ein Werk kann mehrere ISRCs haben (Remixe, Edits, Compilations)."],
+  ["Lizenznehmer","Der Dienst, der gezahlt hat: Spotify AB, Apple, Amazon, Deezer, Google/YouTube, Meta …"],
+  ["Katalognummer","Bei Online-Diensten das Produkt bzw. Abo-Modell: Subscription, AdFunded (werbefinanziert/Free), Unlimited, Prime …"],
+  ["Trägerart","Interner GEMA-Code für die Nutzungsform. In den Daten: 149 = Streaming, 91/95 = Download-Varianten (aus den Daten abgeleitet)."],
+  ["Verkaufsland","Land, in dem gestreamt oder gekauft wurde (ISO-Code)."],
+  ["Lizenzwert in Euro","Bei Downloads der Lizenzwert des Verkaufs; bei Streaming meist 0, weil dort pauschal je Land und Produkt verteilt wird."],
+  ["Nutzungsjahr / Quartal","<b>Wann</b> die Musik genutzt wurde — nicht wann gezahlt wird. Online-Nutzungen werden oft ein bis mehrere Jahre später ausgeschüttet; daher kann eine Ausschüttung Nutzungen aus mehreren Jahren enthalten."],
+  ["Verteilart","HV = Hauptverteilung (reguläre Ausschüttung). Andere Werte (z. B. Nachverteilung) stehen für Korrekturen oder Nachzahlungen früherer Perioden."]
+];
+
+/* ---- dimensions & measures of the pivot ---- */
+const GEMA_DIMS=[
+  {k:"set", label:"Ausschüttung", order:"asc"},
+  {k:"sparte", label:"Sparte"},
+  {k:"art", label:"Nutzungsart"},
+  {k:"recht", label:"Rechteart (AR/VR)"},
+  {k:"werk", label:"Werk"},
+  {k:"isrc", label:"ISRC (Aufnahme)"},
+  {k:"komp", label:"Komponist(en)"},
+  {k:"bg", label:"Berufsgruppe"},
+  {k:"lizenz", label:"Plattform"},
+  {k:"produkt", label:"Produkt / Abo-Modell"},
+  {k:"land", label:"Land"},
+  {k:"njahr", label:"Nutzungsjahr", order:"asc"},
+  {k:"nquartal", label:"Nutzungsquartal", order:"asc"},
+  {k:"traeger", label:"Trägerart"},
+  {k:"verteil", label:"Verteilart"},
+  {k:"abrnr", label:"Abrechnungsnr.", order:"asc"}
+];
+const GEMA_DIM=Object.fromEntries(GEMA_DIMS.map(d=>[d.k,d]));
+const GEMA_MEASURES=[
+  {k:"gebucht", label:"Betrag gebucht (€)", money:true},
+  {k:"betrag", label:"Grundbetrag (€)", money:true},
+  {k:"zuschlag", label:"Zuschläge (€)", money:true},
+  {k:"lizenzwert", label:"Lizenzwert (€)", money:true},
+  {k:"n", label:"Anzahl Positionen", money:false}
+];
+const GEMA_PRESETS=[
+  {label:"Werke × Sparte", v:{row:"werk", row2:"", col:"sparte"}},
+  {label:"Werke × Ausschüttung", v:{row:"werk", row2:"", col:"set", mode:"delta"}},
+  {label:"Plattform → Produkt", v:{row:"lizenz", row2:"produkt", col:"art"}},
+  {label:"Länder", v:{row:"land", row2:"", col:"art"}},
+  {label:"Nutzungszeitraum", v:{row:"nquartal", row2:"", col:"art", sort:{by:"label", dir:1}}},
+  {label:"Sparte × Ausschüttung", v:{row:"sparte", row2:"", col:"set", mode:"delta"}}
+];
+const GEMA_VIEW_DEFAULT={row:"werk", row2:"", col:"sparte", measure:"gebucht", mode:"val", filters:[], hidden:[], sort:{by:"total", dir:-1}};
+
+let gemaSets=[];      // {id:"YYYY-MM-DD", termin:"DD.MM.YYYY", files:[], importedAt, raw:[{field:string}], _rows}
+let gView=JSON.parse(JSON.stringify(GEMA_VIEW_DEFAULT));
+let gemaChart=null, gLimit=50, gRawLimit=25;
+
+/* ---- helpers ---- */
+function gNormHead(h){ return String(h||"").replace(/^﻿/,"").toLowerCase().replace(/ä/g,"a").replace(/ö/g,"o").replace(/ü/g,"u").replace(/ß/g,"ss").replace(/[^a-z0-9]/g,""); }
+function gNum(s){ if(s==null||s==="") return 0; s=String(s).trim(); if(s.includes(",")) s=s.replace(/\./g,"").replace(",","."); const n=parseFloat(s); return isFinite(n)?n:0; }
+function gTitle(s){ s=(s||"").trim(); if(!s) return ""; if(s!==s.toUpperCase()) return s;
+  return s.toLowerCase().replace(/(^|[\s(\-\/"'.,])([a-zà-ÿ])/g,(m,a,b)=>a+b.toUpperCase()); }
+function gLicensee(s){ s=(s||"").trim(); if(!s) return "(unbekannt)";
+  return gTitle(s.replace(/\b(S\.?A\.?R\.?L\.?|LIMITED|LTD\.?|ULC|GMBH|INC\.?|S\.?A\.?|AB|AS|B\.?V\.?)\s*$/i,"").replace(/[\s,]+$/,"").trim()); }
+let gRegionNames=null; try{ gRegionNames=new Intl.DisplayNames(["de"],{type:"region"}); }catch(e){}
+function gLand(c){ c=(c||"").trim().toUpperCase(); if(!c) return "(unbekannt)"; let n=null; try{ n=gRegionNames&&/^[A-Z]{2}$/.test(c)?gRegionNames.of(c):null; }catch(e){} return n&&n!==c ? n+" ("+c+")" : c; }
+function gTerminISO(t){ const m=/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec((t||"").trim()); return m ? m[3]+"-"+m[2].padStart(2,"0")+"-"+m[1].padStart(2,"0") : null; }
+function gSetLabel(id){ const s=gemaSets.find(x=>x.id===id); return s ? s.termin : id; }
+function gMoney(n){ return (Math.round((+n||0)*100)/100).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €"; }
+function gFmt(n, money){
+  if(!n) return '<span class="zero">–</span>';
+  if(!money) return Math.round(n).toLocaleString("de-DE");
+  if(Math.abs(n)<0.005) return (n<0?"&gt;−":"&lt;")+"0,01 €";
+  return gMoney(n);
+}
+function gEsc(s){ return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ---- compact column-wise storage ---- */
+function gEncode(rows){
+  const cols={};
+  Object.keys(GEMA_FIELDS).forEach(f=>{
+    const dict=[], pos=new Map(), idx=new Array(rows.length);
+    rows.forEach((r,i)=>{ const v=r[f]==null?"":String(r[f]); let p=pos.get(v); if(p===undefined){ p=dict.length; dict.push(v); pos.set(v,p); } idx[i]=p; });
+    if(dict.length<=1) cols[f]={d:dict};
+    else { const w=(dict.length-1).toString(36).length; cols[f]={d:dict, w, i:idx.map(p=>p.toString(36).padStart(w,"0")).join("")}; }
+  });
+  return {n:rows.length, cols};
+}
+function gDecode(enc){
+  const n=+enc.n||0, rows=Array.from({length:n},()=>({}));
+  Object.keys(enc.cols||{}).forEach(f=>{ const c=enc.cols[f];
+    if(!c.i){ const v=(c.d&&c.d[0])||""; rows.forEach(r=>r[f]=v); return; }
+    for(let k=0;k<n;k++) rows[k][f]=c.d[parseInt(c.i.substr(k*c.w,c.w),36)]||"";
+  });
+  return rows;
+}
+function gemaSerialize(){ return {v:1, sets:gemaSets.map(s=>({id:s.id, termin:s.termin, files:s.files, importedAt:s.importedAt, data:gEncode(s.raw)}))}; }
+function gemaLoadFrom(st){
+  gemaSets=[];
+  ((st&&st.sets)||[]).forEach(s=>{ try{ if(s&&s.id&&s.data) gemaSets.push({id:s.id, termin:s.termin||s.id, files:s.files||[], importedAt:s.importedAt||null, raw:gDecode(s.data)}); }catch(e){} });
+  gemaSets.sort((a,b)=>a.id.localeCompare(b.id));
+}
+function gemaSave(){
+  if(!canPersist) return false;
+  try{ if(gemaSets.length) localStorage.setItem(GEMA_KEY, JSON.stringify(gemaSerialize())); else localStorage.removeItem(GEMA_KEY); return true; }
+  catch(e){ toast("GEMA-Daten konnten nicht gespeichert werden (Browser-Speicher voll?). Bitte Backup herunterladen."); return false; }
+}
+function gemaLoad(){
+  if(!canPersist) return;
+  try{ const raw=localStorage.getItem(GEMA_KEY); if(raw) gemaLoadFrom(JSON.parse(raw)); }catch(e){}
+  try{ const v=JSON.parse(localStorage.getItem(GEMA_VIEW_KEY)||"null"); if(v&&typeof v==="object") gView=Object.assign(JSON.parse(JSON.stringify(GEMA_VIEW_DEFAULT)), v); }catch(e){}
+  gSanitizeView();
+}
+function gSaveView(){ try{ localStorage.setItem(GEMA_VIEW_KEY, JSON.stringify(gView)); }catch(e){} }
+function gSanitizeView(){
+  if(!GEMA_DIM[gView.row]) gView.row="werk";
+  if(gView.row2 && (!GEMA_DIM[gView.row2]||gView.row2===gView.row)) gView.row2="";
+  if(gView.col && !GEMA_DIM[gView.col]) gView.col="";
+  if(!GEMA_MEASURES.some(m=>m.k===gView.measure)) gView.measure="gebucht";
+  if(!["val","pct","delta"].includes(gView.mode)) gView.mode="val";
+  if(!Array.isArray(gView.filters)) gView.filters=[];
+  gView.filters=gView.filters.filter(f=>f&&GEMA_DIM[f.dim]);
+  if(!Array.isArray(gView.hidden)) gView.hidden=[];
+  if(!gView.sort||typeof gView.sort!=="object") gView.sort={by:"total",dir:-1};
+}
+
+/* ---- import ---- */
+function gDecodeText(buf){
+  try{ return new TextDecoder("utf-8",{fatal:true}).decode(buf); }
+  catch(e){ return new TextDecoder("windows-1252").decode(buf); }   // older exports may be ANSI-encoded
+}
+function gParseCSV(text){
+  text=text.replace(/^﻿/,"");
+  const res=Papa.parse(text,{delimiter:";", skipEmptyLines:true});
+  const data=res.data; if(!data.length) throw new Error("leere Datei");
+  const head=data[0].map(gNormHead), map={};
+  Object.keys(GEMA_FIELDS).forEach(f=>{ const i=head.findIndex(h=>GEMA_FIELDS[f].includes(h)); if(i>=0) map[f]=i; });
+  if(map.sparte==null || map.gebucht==null) throw new Error("kein GEMA-Detailreport (Spalten „Spartenkürzel“ / „Betrag gebucht“ fehlen)");
+  const rows=[];
+  for(let k=1;k<data.length;k++){ const line=data[k]; if(!line||line.length<3) continue;
+    const r={}; Object.keys(map).forEach(f=>{ r[f]=(line[map[f]]==null?"":String(line[map[f]])).trim(); }); rows.push(r); }
+  return rows;
+}
+function gImport(fileName, rows){
+  const byTermin=new Map();
+  rows.forEach(r=>{ const iso=gTerminISO(r.termin)||"unbekannt"; if(!byTermin.has(iso)) byTermin.set(iso,[]); byTermin.get(iso).push(r); });
+  const msgs=[];
+  byTermin.forEach((list, iso)=>{
+    let set=gemaSets.find(s=>s.id===iso);
+    if(!set){ set={id:iso, termin:list[0].termin||iso, files:[], importedAt:null, raw:[]}; gemaSets.push(set); msgs.push("Ausschüttung "+set.termin+" neu: "+list.length+" Positionen"); }
+    else {   // same payout imported again: replace the statements (Abrechnungsnummern) contained in the file, keep the rest
+      const nrs=new Set(list.map(r=>r.abrnr)); const before=set.raw.length;
+      set.raw=set.raw.filter(r=>!nrs.has(r.abrnr));
+      msgs.push("Ausschüttung "+set.termin+" aktualisiert: "+(before-set.raw.length)+" ersetzt, jetzt "+(set.raw.length+list.length)+" Positionen");
+    }
+    set.raw=set.raw.concat(list); set._rows=null;
+    if(!set.files.includes(fileName)) set.files.push(fileName);
+    set.importedAt=new Date().toISOString();
+  });
+  gemaSets.sort((a,b)=>a.id.localeCompare(b.id));
+  return msgs;
+}
+function handleGemaFiles(files){
+  const arr=[...files].filter(f=>/\.csv$/i.test(f.name)||f.type.includes("csv"));
+  if(!arr.length){ toast("Keine CSV-Datei erkannt."); return; }
+  let pending=arr.length, ok=false;
+  arr.forEach(f=>{ const r=new FileReader();
+    r.onload=()=>{ try{ const rows=gParseCSV(gDecodeText(r.result)); if(!rows.length) throw new Error("keine Positionen gefunden");
+        gImport(f.name, rows).forEach(m=>toast(m,true)); ok=true; }
+      catch(e){ toast(f.name+": "+e.message); }
+      finally{ if(--pending===0 && ok){ gemaSave(); renderGema(); } } };
+    r.onerror=()=>{ toast(f.name+": Datei konnte nicht gelesen werden"); if(--pending===0 && ok){ gemaSave(); renderGema(); } };
+    r.readAsArrayBuffer(f); });
+}
+function removeGemaSet(id){
+  const s=gemaSets.find(x=>x.id===id); if(!s) return;
+  if(!confirm("Ausschüttung "+s.termin+" ("+s.raw.length+" Positionen) löschen?")) return;
+  gemaSets=gemaSets.filter(x=>x.id!==id); gView.hidden=gView.hidden.filter(x=>x!==id);
+  gemaSave(); gSaveView(); renderGema(); toast("Ausschüttung "+s.termin+" gelöscht.",true);
+}
+function clearGema(){
+  if(!gemaSets.length) return;
+  if(!confirm("Alle gespeicherten GEMA-Abrechnungen löschen?")) return;
+  gemaSets=[]; gView.filters=[]; gView.hidden=[]; gemaSave(); gSaveView(); renderGema(); toast("GEMA-Daten gelöscht.",true);
+}
+
+/* ---- derived rows ---- */
+function gDerive(r, set){
+  const info=gemaInfo(r.sparte), qv=r.qvon, qb=r.qbis;
+  const zus=gNum(r.sonst)+gNum(r.ausfall);
+  return {
+    set:set.id, sparte:(r.sparte||"?").trim(), art:info.art, recht:GEMA_RECHT[info.recht]||info.recht,
+    werk:gTitle(r.titel)||"(ohne Titel)", isrc:r.isrc||"(ohne ISRC)", komp:gTitle(r.komp)||"(unbekannt)",
+    bg:GEMA_BG[r.bg]||(r.bg?"Gruppe "+r.bg:"(ohne)"), lizenz:gLicensee(r.lizenz), produkt:r.katalog||"(ohne Angabe)",
+    land:gLand(r.land), njahr:r.njahr||"(ohne)", nquartal:r.njahr?(r.njahr+" Q"+(qv||"?")+(qb&&qb!==qv?"–Q"+qb:"")):"(ohne)",
+    traeger:r.traeger||"(ohne)", verteil:r.verteil||"(ohne)", abrnr:r.abrnr||"(ohne)",
+    anteil:gNum(r.anteil), raw:r,
+    m:{gebucht:gNum(r.gebucht), betrag:gNum(r.betrag), zuschlag:zus, lizenzwert:gNum(r.lizenzwert), n:1}
+  };
+}
+function gRows(set){ if(!set._rows) set._rows=set.raw.map(r=>gDerive(r,set)); return set._rows; }
+function gActiveSets(){ return gemaSets.filter(s=>!gView.hidden.includes(s.id)); }
+function gFiltered(){
+  const out=[], fs=gView.filters;
+  gActiveSets().forEach(s=>gRows(s).forEach(r=>{ if(fs.every(f=>r[f.dim]===f.val)) out.push(r); }));
+  return out;
+}
+function gValLabel(dim, v){ return dim==="set" ? gSetLabel(v) : v; }
+function gValNote(dim, v){
+  if(dim==="sparte"){ const i=gemaInfo(v); return {sub:i.name, title:i.name+" — "+i.text.replace(/<[^>]+>/g,"")}; }
+  return null;
+}
+function gOrderVals(dim, rows, measure){
+  const tot=new Map(); rows.forEach(r=>tot.set(r[dim],(tot.get(r[dim])||0)+r.m[measure]));
+  const keys=[...tot.keys()];
+  if(GEMA_DIM[dim].order==="asc") return keys.sort((a,b)=>String(a).localeCompare(String(b),"de",{numeric:true}));
+  return keys.sort((a,b)=>Math.abs(tot.get(b))-Math.abs(tot.get(a)) || String(a).localeCompare(String(b),"de"));
+}
+
+/* ---- pivot ---- */
+const GP_MAXCOLS=24;
+function gPivot(rows){
+  const v=gView, m=v.measure, C=v.col;
+  let colKeys=C ? gOrderVals(C, rows, m) : ["__all"], other=false;
+  if(C && colKeys.length>GP_MAXCOLS){ colKeys=colKeys.slice(0,GP_MAXCOLS); other=true; }
+  const ci=new Map(colKeys.map((c,i)=>[c,i])), nc=colKeys.length+(other?1:0);
+  const groups=new Map(), colTot=new Array(nc).fill(0); let grand=0;
+  rows.forEach(r=>{
+    const x=r.m[m], c=C ? (ci.has(r[C])?ci.get(r[C]):colKeys.length) : 0;
+    let g=groups.get(r[v.row]); if(!g){ g={key:r[v.row], vals:new Array(nc).fill(0), tot:0, subs:new Map()}; groups.set(r[v.row],g); }
+    g.vals[c]+=x; g.tot+=x;
+    if(v.row2){ let s=g.subs.get(r[v.row2]); if(!s){ s={key:r[v.row2], vals:new Array(nc).fill(0), tot:0}; g.subs.set(r[v.row2],s); } s.vals[c]+=x; s.tot+=x; }
+    colTot[c]+=x; grand+=x;
+  });
+  const list=[...groups.values()].map(g=>({...g, subs:[...g.subs.values()]}));
+  const sorter=gSorter(v.row), sub=gSorter(v.row2);
+  list.sort(sorter); list.forEach(g=>g.subs.sort(sub));
+  return {colKeys, other, groups:list, colTot, grand, nc};
+}
+function gSorter(dim){
+  const s=gView.sort||{by:"total",dir:-1};
+  return (a,b)=>{
+    if(s.by==="label") return s.dir*String(gValLabel(dim,a.key)).localeCompare(String(gValLabel(dim,b.key)),"de",{numeric:true});
+    const A=s.by==="total"?a.tot:(a.vals[s.by]||0), B=s.by==="total"?b.tot:(b.vals[s.by]||0);
+    return s.dir*(A-B) || String(a.key).localeCompare(String(b.key),"de");
+  };
+}
+function gCells(vals, tot, P, money){
+  const mode=gView.mode, C=gView.col; let h="";
+  vals.forEach((x,i)=>{
+    let txt;
+    if(mode==="pct") txt = P.colTot[i] ? (x/P.colTot[i]*100).toLocaleString("de-DE",{maximumFractionDigits:1,minimumFractionDigits:1})+" %" : '<span class="zero">–</span>';
+    else if(mode==="delta" && C && i>0 && !(P.other && i===P.nc-1)){
+      const d=x-vals[i-1], p=vals[i-1]? d/Math.abs(vals[i-1])*100 : null;
+      txt = !d ? '<span class="zero">±0</span>' : `<span class="${d>0?"g-up":"g-down"}">${d>0?"+":"−"}${gFmt(Math.abs(d),money)}</span>`+(p!=null?`<span class="dp">${d>0?"+":"−"}${Math.abs(p).toLocaleString("de-DE",{maximumFractionDigits:0})} %</span>`:'<span class="dp">neu</span>');
+    }
+    else txt=gFmt(x,money);
+    h+=`<td class="num">${txt}</td>`;
+  });
+  if(C) h+=`<td class="num tot">${mode==="pct" ? (P.grand?(tot/P.grand*100).toLocaleString("de-DE",{maximumFractionDigits:1,minimumFractionDigits:1})+" %":"–") : gFmt(tot,money)}</td>`;
+  return h;
+}
+function gLabelCell(dim, key, clickable){
+  const n=gValNote(dim,key), lab=gEsc(gValLabel(dim,key));
+  return `<td${n?` title="${gEsc(n.title)}"`:""}>${clickable?`<span class="pv-lab" data-dim="${dim}" data-val="${gEsc(key)}">${lab}</span>`:lab}${n?`<span class="sub">${gEsc(n.sub)}</span>`:""}</td>`;
+}
+function renderPivot(rows){
+  const v=gView, P=gPivot(rows), mDef=GEMA_MEASURES.find(x=>x.k===v.measure), money=mDef.money, C=v.col;
+  const arrow=by=>v.sort.by===by?`<span class="srt">${v.sort.dir<0?" ↓":" ↑"}</span>`:"";
+  let h=`<thead><tr><th data-sort="label">${gEsc(GEMA_DIM[v.row].label)}${v.row2?" → "+gEsc(GEMA_DIM[v.row2].label):""}${arrow("label")}</th>`;
+  if(C){
+    P.colKeys.forEach((k,i)=>{ const n=gValNote(C,k); h+=`<th class="num" data-sort="${i}"${n?` title="${gEsc(n.title)}"`:""}>${gEsc(gValLabel(C,k))}${arrow(i)}${n?`<span class="sub">${gEsc(n.sub)}</span>`:""}</th>`; });
+    if(P.other) h+=`<th class="num" data-sort="${P.colKeys.length}">Übrige${arrow(P.colKeys.length)}</th>`;
+    h+=`<th class="num" data-sort="total">Summe${arrow("total")}</th>`;
+  } else h+=`<th class="num" data-sort="total">${gEsc(mDef.label)}${arrow("total")}</th>`;
+  h+="</tr></thead><tbody>";
+  const shown=P.groups.slice(0,gLimit);
+  shown.forEach(g=>{
+    h+=`<tr class="pv-g${g.subs.length?" has-sub":""}">${gLabelCell(v.row,g.key,true)}${gCells(g.vals,g.tot,P,money)}</tr>`;
+    g.subs.forEach(s=>{ h+=`<tr class="pv-s">${gLabelCell(v.row2,s.key,false)}${gCells(s.vals,s.tot,P,money)}</tr>`; });
+  });
+  if(!P.groups.length) h+=`<tr><td colspan="${P.nc+2}" class="zero">Keine Positionen für diese Auswahl.</td></tr>`;
+  h+=`</tbody><tfoot><tr><td>Summe</td>${gCells(P.colTot,P.grand,P,money)}</tr></tfoot>`;
+  const t=document.getElementById("pvTable"); t.innerHTML=h;
+  t.querySelectorAll("th[data-sort]").forEach(th=>th.onclick=()=>{
+    const by=th.dataset.sort==="label"||th.dataset.sort==="total"?th.dataset.sort:+th.dataset.sort;
+    v.sort = v.sort.by===by ? {by, dir:-v.sort.dir} : {by, dir:by==="label"?1:-1};
+    gSaveView(); renderPivot(gFiltered());
+  });
+  t.querySelectorAll(".pv-lab").forEach(el=>el.onclick=()=>gAddFilter(el.dataset.dim, el.dataset.val));
+  document.getElementById("pvInfo").textContent=`${P.groups.length.toLocaleString("de-DE")} Zeilen · ${rows.length.toLocaleString("de-DE")} Positionen · Summe ${money?gMoney(P.grand):Math.round(P.grand).toLocaleString("de-DE")}`;
+  const more=document.getElementById("pvMore");
+  more.style.display=P.groups.length>50?"":"none";
+  more.textContent=gLimit<P.groups.length?`Alle ${P.groups.length} anzeigen`:"Nur Top 50";
+  return P;
+}
+function gPivotCSV(){
+  const rows=gFiltered(), v=gView, P=gPivot(rows), C=v.col, mDef=GEMA_MEASURES.find(x=>x.k===v.measure);
+  const num=x=>mDef.money?(Math.round(x*10000)/10000).toString().replace(".",","):String(Math.round(x));
+  const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  const head=[GEMA_DIM[v.row].label].concat(v.row2?[GEMA_DIM[v.row2].label]:[]);
+  const colNames=C?P.colKeys.map(k=>gValLabel(C,k)).concat(P.other?["Übrige"]:[]).concat(["Summe"]):[mDef.label];
+  const lines=[head.concat(colNames).map(q).join(";")];
+  const line=(a,b,vals,tot)=>lines.push([q(a)].concat(v.row2?[q(b)]:[]).concat((C?vals.concat([tot]):[tot]).map(num)).join(";"));
+  P.groups.forEach(g=>{ line(gValLabel(v.row,g.key), v.row2?"(Summe)":"", g.vals, g.tot); g.subs.forEach(s=>line(gValLabel(v.row,g.key), gValLabel(v.row2,s.key), s.vals, s.tot)); });
+  line("Summe", "", P.colTot, P.grand);
+  const note=gView.filters.length?"Filter: "+gView.filters.map(f=>GEMA_DIM[f.dim].label+" = "+gValLabel(f.dim,f.val)).join(", "):"";
+  if(note) lines.push("", q(note));
+  const blob=new Blob(["﻿"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download="gema-pivot-"+new Date().toISOString().slice(0,10)+".csv"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000); toast("Pivot als CSV exportiert.",true);
+}
+
+/* ---- filters ---- */
+function gAddFilter(dim, val){
+  if(!GEMA_DIM[dim]) return;
+  gView.filters=gView.filters.filter(f=>f.dim!==dim); gView.filters.push({dim, val});
+  // drilling into the row dimension: show the next level instead of a single row
+  if(dim===gView.row){
+    const used=new Set(gView.filters.map(f=>f.dim).concat([gView.col]));
+    gView.row = gView.row2 && !used.has(gView.row2) ? gView.row2 : ["werk","sparte","lizenz","land","nquartal","produkt"].find(k=>!used.has(k)) || "werk";
+    gView.row2=""; if(typeof gView.sort.by==="number") gView.sort={by:"total",dir:-1};
+  }
+  gLimit=50; gSaveView(); renderGema();
+}
+function gRemoveFilter(i){ gView.filters.splice(i,1); gSaveView(); renderGema(); }
+function renderFilterUI(){
+  const chips=gView.filters.map((f,i)=>`<span class="f-chip"><span>${gEsc(GEMA_DIM[f.dim].label)}</span> <b>${gEsc(gValLabel(f.dim,f.val))}</b><button type="button" data-i="${i}" title="Filter entfernen">×</button></span>`).join("");
+  const box=document.getElementById("pvFilterChips"); box.innerHTML=chips||'<span class="zero" style="font-size:12.5px">keine</span>';
+  box.querySelectorAll("button").forEach(b=>b.onclick=()=>gRemoveFilter(+b.dataset.i));
+  const fd=document.getElementById("pvFDim");
+  if(!fd.options.length) fd.innerHTML=GEMA_DIMS.map(d=>`<option value="${d.k}">${gEsc(d.label)}</option>`).join("");
+  gFillFilterValues();
+}
+function gFillFilterValues(){
+  const dim=document.getElementById("pvFDim").value||"werk";
+  // offer values that exist under the other active filters
+  const fs=gView.filters.filter(f=>f.dim!==dim), rows=[];
+  gActiveSets().forEach(s=>gRows(s).forEach(r=>{ if(fs.every(f=>r[f.dim]===f.val)) rows.push(r); }));
+  const vals=gOrderVals(dim, rows, "gebucht");
+  document.getElementById("pvFVal").innerHTML=vals.map(x=>`<option value="${gEsc(x)}">${gEsc(gValLabel(dim,x))}</option>`).join("");
+}
+
+/* ---- overview ---- */
+function renderGemaKpis(rows){
+  const act=gActiveSets(); const box=document.getElementById("gemaKpis");
+  if(!act.length){ box.innerHTML=""; return; }
+  const last=act[act.length-1], prev=act.length>1?act[act.length-2]:null;
+  const stats=id=>{ const rs=rows.filter(r=>r.set===id);
+    return {sum:rs.reduce((a,r)=>a+r.m.gebucht,0), n:rs.length, werke:new Set(rs.map(r=>r.werk)).size,
+      plat:new Set(rs.map(r=>r.lizenz)).size, land:new Set(rs.map(r=>r.land)).size}; };
+  const A=stats(last.id), B=prev?stats(prev.id):null;
+  const d=(a,b,money)=>{ if(!B) return "&nbsp;"; const x=a-b; if(!x) return "± 0 vs. "+gEsc(prev.termin);
+    const p=b?` (${x>0?"+":"−"}${Math.abs(x/b*100).toLocaleString("de-DE",{maximumFractionDigits:0})} %)`:"";
+    return `<span class="${x>0?"g-up":"g-down"}">${x>0?"+":"−"}${money?gMoney(Math.abs(x)):Math.abs(x)}${p}</span> vs. ${gEsc(prev.termin)}`; };
+  const k=(lab,val,dl)=>`<div class="panel g-kpi"><div class="k">${lab}</div><div class="v">${val}</div><div class="d">${dl}</div></div>`;
+  box.innerHTML=
+    k("Gebucht · "+gEsc(last.termin), gMoney(A.sum), d(A.sum,B&&B.sum,true))+
+    k("Positionen", A.n.toLocaleString("de-DE"), d(A.n,B&&B.n))+
+    k("Werke", A.werke, d(A.werke,B&&B.werke))+
+    k("Plattformen", A.plat, d(A.plat,B&&B.plat))+
+    k("Länder", A.land, d(A.land,B&&B.land));
+}
+function renderGemaChart(rows){
+  const act=gActiveSets(), cv=document.getElementById("gemaChart");
+  if(!window.Chart||!cv) return;
+  if(document.getElementById("tab-gema").hidden) return;   // Chart.js needs a visible canvas; drawn on tab switch
+  const sp=gOrderVals("sparte", rows, "gebucht");
+  const ds=sp.map((s,i)=>({label:s, backgroundColor:PALETTE[i%PALETTE.length], borderRadius:4, maxBarThickness:70,
+    data:act.map(set=>rows.reduce((a,r)=>a+(r.set===set.id&&r.sparte===s?r.m.gebucht:0),0))}));
+  if(gemaChart) gemaChart.destroy();
+  gemaChart=new Chart(cv,{type:"bar",data:{labels:act.map(s=>s.termin),datasets:ds},options:{
+    responsive:true,maintainAspectRatio:false,animation:{duration:350},
+    scales:{x:{stacked:true,grid:{display:false},border:{color:"#252B39"},ticks:{font:{size:11}}},
+      y:{stacked:true,grid:{color:"rgba(37,43,57,.55)"},border:{display:false},ticks:{font:{size:11},callback:v=>v.toLocaleString("de-DE")+" €"}}},
+    plugins:{legend:{position:"bottom",labels:{boxWidth:10,boxHeight:10,color:"#8B94A8",font:{size:11}}},
+      tooltip:{backgroundColor:"#1A1E2A",borderColor:"#252B39",borderWidth:1,titleColor:"#E8EBF2",bodyColor:"#E8EBF2",padding:12,cornerRadius:8,
+        callbacks:{title:i=>"Ausschüttung "+i[0].label,label:i=>"  "+i.dataset.label+" ("+gemaInfo(i.dataset.label).name+"):  "+gMoney(i.parsed.y),
+          footer:i=>"Summe: "+gMoney(i.reduce((a,x)=>a+x.parsed.y,0))}}}
+  }});
+}
+
+/* ---- raw rows ---- */
+function renderGemaRaw(rows){
+  const list=rows.slice().sort((a,b)=>b.m.gebucht-a.m.gebucht), shown=list.slice(0,gRawLimit);
+  let h=`<thead><tr><th>Werk</th><th>Sparte</th><th>Plattform</th><th>Produkt</th><th>Land</th><th>Nutzung</th><th>Berufsgr.</th><th class="num">Anteil</th><th class="num">Betrag</th><th class="num">Zuschläge</th><th class="num">Gebucht</th><th>Ausschüttung</th></tr></thead><tbody>`;
+  shown.forEach(r=>{ const i=gemaInfo(r.sparte);
+    h+=`<tr><td>${gEsc(r.werk)}</td><td title="${gEsc(i.name)}">${gEsc(r.sparte)}</td><td title="${gEsc(r.raw.lizenz)}">${gEsc(r.lizenz)}</td><td>${gEsc(r.produkt)}</td><td>${gEsc(r.land)}</td><td>${gEsc(r.nquartal)}</td><td>${gEsc(r.raw.bg||"")}</td>`+
+      `<td class="num">${r.anteil?r.anteil.toLocaleString("de-DE",{maximumFractionDigits:2})+" %":"–"}</td><td class="num">${r.m.betrag.toLocaleString("de-DE",{minimumFractionDigits:4,maximumFractionDigits:4})}</td><td class="num">${r.m.zuschlag.toLocaleString("de-DE",{minimumFractionDigits:4,maximumFractionDigits:4})}</td>`+
+      `<td class="num">${r.m.gebucht.toLocaleString("de-DE",{minimumFractionDigits:4,maximumFractionDigits:4})}</td><td>${gEsc(gSetLabel(r.set))}</td></tr>`; });
+  if(!shown.length) h+=`<tr><td colspan="12" class="zero">Keine Positionen.</td></tr>`;
+  document.getElementById("gemaRaw").innerHTML=h+"</tbody>";
+  document.getElementById("gemaRawInfo").textContent=`${shown.length.toLocaleString("de-DE")} von ${list.length.toLocaleString("de-DE")} Positionen`;
+  document.getElementById("gemaRawMore").style.display=list.length>shown.length?"":"none";
+}
+
+/* ---- glossary ---- */
+function renderGemaGlossary(){
+  const tot=new Map(); gemaSets.forEach(s=>gRows(s).forEach(r=>tot.set(r.sparte,(tot.get(r.sparte)||0)+r.m.gebucht)));
+  const known=new Set(GEMA_SPARTEN.map(s=>s.code));
+  const extra=[...tot.keys()].filter(c=>!known.has(c)).map(c=>gemaInfo(c));
+  const list=GEMA_SPARTEN.concat(extra)
+    .sort((a,b)=>(tot.has(b.code)-tot.has(a.code)) || ((tot.get(b.code)||0)-(tot.get(a.code)||0)));
+  document.getElementById("gemaGlossary").innerHTML=list.map(s=>`
+    <div class="panel gl-card${tot.has(s.code)?" present":""}">
+      <div class="gl-top"><span class="gl-code">${gEsc(s.code)}</span><span class="gl-name">${gEsc(s.name)}</span>${tot.has(s.code)?`<span class="gl-amt">${gMoney(tot.get(s.code))}</span>`:""}</div>
+      <div class="gl-tags"><span>${gEsc(s.art)}</span><span>${gEsc(GEMA_RECHT[s.recht]||s.recht)}</span></div>
+      <p>${s.text}</p>
+    </div>`).join("")+`
+    <div class="panel gl-card present"><div class="gl-top"><span class="gl-code">AR / VR</span><span class="gl-name">Zwei Rechte, zwei Töpfe</span></div>
+      <p>Fast jede Nutzung wird doppelt vergütet: das <b>Aufführungsrecht</b> (AR — öffentliche Wiedergabe bzw. Zugänglichmachung, Kürzel ohne Zusatz) und das <b>Vervielfältigungsrecht</b> (VR — das Anfertigen von Kopien, Kürzel mit „VR“). Beim Streaming überwiegt der AR-Anteil, beim Download der VR-Anteil. Für die Summe je Werk beide Sparten zusammen betrachten — z. B. mit Pivot-Spalte <i>Nutzungsart</i>.</p></div>`;
+  document.getElementById("gemaFields").innerHTML=GEMA_FIELD_HELP.map(([k,t])=>`<div><dt>${gEsc(k)}</dt><dd>${t}</dd></div>`).join("");
+}
+
+/* ---- main render ---- */
+function renderGemaControls(){
+  const opt=(sel,none)=>(none?`<option value="">— ${none} —</option>`:"")+GEMA_DIMS.map(d=>`<option value="${d.k}"${d.k===sel?" selected":""}>${gEsc(d.label)}</option>`).join("");
+  document.getElementById("pvRow").innerHTML=opt(gView.row);
+  document.getElementById("pvRow2").innerHTML=opt(gView.row2,"keine");
+  document.getElementById("pvCol").innerHTML=opt(gView.col,"keine");
+  document.getElementById("pvMeasure").innerHTML=GEMA_MEASURES.map(m=>`<option value="${m.k}"${m.k===gView.measure?" selected":""}>${gEsc(m.label)}</option>`).join("");
+  document.querySelectorAll("#pvMode button").forEach(b=>b.classList.toggle("on",b.dataset.mode===gView.mode));
+  const dBtn=document.querySelector('#pvMode button[data-mode="delta"]'); if(dBtn) dBtn.disabled=!gView.col;
+}
+function renderGemaChips(){
+  document.getElementById("gemaChips").innerHTML=gemaSets.map((s,i)=>{
+    const sum=gRows(s).reduce((a,r)=>a+r.m.gebucht,0), off=gView.hidden.includes(s.id);
+    return `<div class="chip${off?" off":""}" data-id="${s.id}" title="${gEsc(s.files.join(", "))} — klicken zum Ein-/Ausblenden">
+      <span class="dot" style="background:${PALETTE[i%PALETTE.length]}"></span><span class="nm">${gEsc(s.termin)}</span>
+      <span class="rel">${gMoney(sum)} · ${s.raw.length} Pos.</span><span class="x" data-del="${s.id}" title="Löschen">×</span></div>`; }).join("");
+  document.querySelectorAll("#gemaChips .chip").forEach(c=>c.onclick=e=>{
+    if(e.target.dataset.del){ removeGemaSet(e.target.dataset.del); return; }
+    const id=c.dataset.id; gView.hidden=gView.hidden.includes(id)?gView.hidden.filter(x=>x!==id):gView.hidden.concat(id);
+    gSaveView(); renderGema(); });
+  const hint=document.getElementById("gemaHint");
+  let kb=0; try{ kb=Math.round((localStorage.getItem(GEMA_KEY)||"").length/1024); }catch(e){}
+  hint.textContent = canPersist ? `Automatisch im Browser gespeichert${gemaSets.length?` (${gemaSets.length} Ausschüttung${gemaSets.length>1?"en":""}, ca. ${kb} KB)`:""} — im Backup (Einstellungen → Data) enthalten.` : "Automatisches Speichern hier nicht möglich — bitte Backup nutzen.";
+  hint.className="persist-hint"+(canPersist?" ok":"");
+}
+function renderGema(){
+  gSanitizeView();
+  renderGemaChips(); renderGemaGlossary();
+  const has=gemaSets.length>0;
+  document.getElementById("gemaEmpty").classList.toggle("hidden",has);
+  document.getElementById("gemaDash").style.display=has?"":"none";
+  if(!has){ if(gemaChart){ gemaChart.destroy(); gemaChart=null; } return; }
+  renderGemaControls(); renderFilterUI();
+  const rows=gFiltered();
+  renderGemaKpis(rows); renderGemaChart(rows); renderPivot(rows); renderGemaRaw(rows);
+}
+
+/* ---- wiring ---- */
+(function(){
+  const dz=document.getElementById("gemaDrop"), fi=document.getElementById("gemaInput");
+  dz.onclick=e=>{ if(e.target.closest(".btn")) return; fi.click(); };
+  fi.onchange=()=>{ handleGemaFiles(fi.files); fi.value=""; };
+  ["dragenter","dragover"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add("drag");}));
+  ["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("drag");}));
+  dz.addEventListener("drop",e=>handleGemaFiles(e.dataTransfer.files));
+  document.getElementById("gemaClearBtn").onclick=clearGema;
+  const setV=(k,val)=>{ gView[k]=val; if(k==="row"&&gView.row2===val) gView.row2=""; if(k==="col"&&!val&&gView.mode==="delta") gView.mode="val";
+    if(k!=="measure"&&k!=="mode"&&typeof gView.sort.by==="number") gView.sort={by:"total",dir:-1};
+    gLimit=50; gSaveView(); renderGema(); };
+  document.getElementById("pvRow").onchange=e=>setV("row",e.target.value);
+  document.getElementById("pvRow2").onchange=e=>setV("row2",e.target.value);
+  document.getElementById("pvCol").onchange=e=>setV("col",e.target.value);
+  document.getElementById("pvMeasure").onchange=e=>setV("measure",e.target.value);
+  document.querySelectorAll("#pvMode button").forEach(b=>b.onclick=()=>setV("mode",b.dataset.mode));
+  document.getElementById("pvFDim").onchange=gFillFilterValues;
+  document.getElementById("pvFAdd").onclick=()=>{ const d=document.getElementById("pvFDim").value, val=document.getElementById("pvFVal").value;
+    if(d && document.getElementById("pvFVal").options.length) gAddFilter(d,val); };
+  document.getElementById("pvMore").onclick=()=>{ gLimit=gLimit===50?Infinity:50; renderPivot(gFiltered()); };
+  document.getElementById("pvCsv").onclick=gPivotCSV;
+  document.getElementById("gemaRawMore").onclick=()=>{ gRawLimit+=100; renderGemaRaw(gFiltered()); };
+  const pr=document.getElementById("pvPresets");
+  GEMA_PRESETS.forEach(p=>{ const b=document.createElement("button"); b.className="btn mini"; b.type="button"; b.textContent=p.label;
+    b.onclick=()=>{ Object.assign(gView,{mode:"val", sort:{by:"total",dir:-1}}, JSON.parse(JSON.stringify(p.v))); gLimit=50; gSaveView(); renderGema(); };
+    pr.appendChild(b); });
+})();
+gemaLoad();
 
 /* ---- collapsible sections (fold state is a per-browser view preference, not part of the backup) ---- */
 const FOLD_KEY="singleAnalytics.folded";
