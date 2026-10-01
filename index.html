@@ -308,6 +308,19 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 .inv-form input,.inv-form textarea{background:var(--ink); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:Inter; font-size:13.5px; padding:9px 11px; resize:vertical}
 .inv-form input:focus,.inv-form textarea:focus{outline:none; border-color:var(--amber)}
 .if-cur{color:var(--amber); font-weight:600; text-transform:none}
+.inv-tools{display:flex; justify-content:flex-end; margin-bottom:12px}
+.inv-hint{color:#FFB454}
+.iv-lines-head{display:flex; align-items:center; justify-content:space-between; margin-top:4px}
+.iv-line{display:grid; grid-template-columns:22px 1fr 130px 26px; gap:10px; align-items:start; padding:8px 0; border-bottom:1px solid var(--line)}
+.iv-line:last-child{border-bottom:none}
+.iv-line.off{opacity:.45}
+.iv-line input[type=checkbox]{accent-color:var(--amber); width:16px; height:16px; margin-top:10px}
+.iv-line .iv-desc{width:100%}
+.iv-line .rv-amt input{border:none; background:none; padding:9px 2px}
+.iv-meta{font-size:11.5px; color:var(--faint); margin-top:4px; text-transform:none; letter-spacing:0}
+.man-note{margin:0; font-size:13px; color:var(--muted); line-height:1.5}
+.inv-form .ctrl{align-self:flex-start; text-transform:none}
+@media(max-width:640px){ .iv-line{grid-template-columns:22px 1fr 26px} .iv-line .rv-amt{grid-column:2} .if-grid{grid-template-columns:1fr} }
 .modal-spinner{padding:30px 22px; text-align:center; color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px}
 
 /* GEMA analyzer */
@@ -527,8 +540,9 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
     <section class="section">
       <div class="sec-head">
         <h2><span class="sec-no">&sect;</span> Invoices from statements</h2>
-        <p>Every imported royalty statement appears here. Issue a net invoice (no VAT, §19) to the label with one click. Edit your own letterhead details under the <b>gear</b> tab.</p>
+        <p>Every imported royalty statement appears here — labels without an importable statement can be added manually. Open carryovers of a label are offered as extra lines on its next invoice. Edit your own letterhead details under the <b>gear</b> tab.</p>
       </div>
+      <div class="inv-tools"><button class="btn amber" id="invManualBtn" type="button">+ Add statement manually</button></div>
       <div class="inv-filter" id="invFilter"></div>
       <div id="invList"></div>
     </section>
@@ -785,28 +799,51 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
   </div>
 
   <div class="modal-overlay hidden" id="invModal">
-    <div class="modal">
+    <div class="modal modal-wide">
       <div class="modal-head">
-        <h3>Create invoice</h3>
+        <h3 id="ivTitle">Create invoice</h3>
         <button class="modal-x" id="ivClose" type="button">&times;</button>
       </div>
       <div class="modal-body inv-form">
         <div class="if-grid">
           <label>Invoice no.<input type="text" id="ivNo" placeholder="SM-2026-003"></label>
           <label>Date<input type="text" id="ivDate" placeholder="dd.mm.yyyy"></label>
-          <label>Statement no.<input type="text" id="ivStmt"></label>
-          <label>Period<input type="text" id="ivPeriod" placeholder="H2 2024"></label>
-          <label>Net amount <span class="if-cur">€</span><input type="number" step="0.01" id="ivAmount"></label>
-          <label>Carryover prev. period <span class="if-cur" id="ivCur">€</span><input type="number" step="0.01" id="ivCarry" placeholder="0.00"></label>
+          <label>Recipient (label)<input type="text" id="ivRecipient"></label>
           <label>Greeting name (Hello …)<input type="text" id="ivGreet"></label>
         </div>
-        <div class="inv-total-hint" id="ivTotalHint"></div>
-        <label class="if-full">Recipient (label)<input type="text" id="ivRecipient"></label>
         <label class="if-full">Recipient address<textarea id="ivAddr" rows="3" placeholder="Street&#10;Postcode City"></textarea></label>
+        <label class="if-full">Intro text (after “Hello …,”)<textarea id="ivIntro" rows="2"></textarea></label>
+        <div class="iv-lines-head"><span class="rv-label">Invoice lines</span><button class="btn mini" id="ivAddLine" type="button">+ Add line</button></div>
+        <div id="ivLines"></div>
+        <div class="inv-total-hint" id="ivTotalHint"></div>
       </div>
       <div class="modal-foot">
         <button class="btn" id="ivCancel" type="button">Cancel</button>
         <button class="btn amber" id="ivDownload" type="button">Download PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="manModal">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="manTitle">Add statement manually</h3>
+        <button class="modal-x" id="manClose" type="button">&times;</button>
+      </div>
+      <div class="modal-body inv-form">
+        <p class="man-note">For labels without an importable statement. Save it as <b>open</b> to invoice it, or as <b>carryover</b> if the amount is held back — it is then offered as an extra line on the next invoice for the same label.</p>
+        <label class="if-full">Label<input type="text" id="manLabel" list="manLabels" placeholder="e.g. Black Hole Recordings B.V."><datalist id="manLabels"></datalist></label>
+        <div class="if-grid">
+          <label>Statement no. (optional)<input type="text" id="manStmt"></label>
+          <label>Period<input type="text" id="manPeriod" placeholder="H1 2026 · 01.2026 · Q3 2025"></label>
+          <label>Amount <span class="if-cur" id="manCurLbl">€</span><input type="number" step="0.01" id="manAmount" placeholder="0.00"></label>
+          <label>Currency<div class="ctrl" id="manCur"><button type="button" data-cur="€">€</button><button type="button" data-cur="£">£</button><button type="button" data-cur="$">$</button></div></label>
+        </div>
+        <label class="if-full">Status<div class="ctrl" id="manStatus"><button type="button" data-st="open">Open — invoice it</button><button type="button" data-st="carry">Carryover — add to a later invoice</button></div></label>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="manCancel" type="button">Cancel</button>
+        <button class="btn amber" id="manSave" type="button">Save</button>
       </div>
     </div>
   </div>
@@ -2188,11 +2225,10 @@ function captureStatement(p, label, year, half){
   const rec={id,label,stmtNo,year,half,periodStart:p.periodStart||"",periodEnd:p.periodEnd||"",payable:(p.payable!=null?p.payable:null),currency:p.currency||"€",
              status: prev?prev.status||"open":"open",   // keep an existing paid/carry status on re-import
              carryover: (p.carryover!=null ? p.carryover : (prev&&prev.carryover!=null ? prev.carryover : 0))};
+  if(prev){ if(prev.invoice) rec.invoice=prev.invoice; if(prev.carriedInto) rec.carriedInto=prev.carriedInto; }
   const i=statements.findIndex(s=>s.id===id);
   if(i>=0) statements[i]=rec; else statements.push(rec);
 }
-function setStatementStatus(id, status){ const s=statements.find(x=>x.id===id); if(s){ s.status=status; renderInvoices(); } }
-function removeStatement(id){ statements=statements.filter(s=>s.id!==id); renderInvoices(); }
 
 /* ---- issuer settings (gear tab) ---- */
 function renderSettings(){
@@ -2211,94 +2247,214 @@ function renderSettings(){
 
 /* ---- statements list (invoices tab) ---- */
 const CHECK_SVG='<svg class="ic" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>';
+function setStatementStatus(id, status){
+  const s=statements.find(x=>x.id===id); if(!s) return;
+  s.status=status;
+  // carryovers included in this statement's invoice follow its payment state
+  statements.forEach(c=>{ if(c.carriedInto!==id) return;
+    if(status==="paid") c.status="paid"; else if(c.status==="paid") c.status="carry"; });
+  // reopening a carryover takes it out of the invoice it was added to
+  if(status==="open" && s.carriedInto){ unlinkCarry(s); }
+  renderInvoices();
+}
+function unlinkCarry(c){
+  const host=statements.find(x=>x.id===c.carriedInto);
+  if(host&&host.invoice) host.invoice.lines=host.invoice.lines.filter(l=>!(l.kind==="carry"&&l.stmtId===c.id));
+  c.carriedInto=null;
+}
+function removeStatement(id){
+  const s=statements.find(x=>x.id===id); if(!s) return;
+  const linked=statements.filter(c=>c.carriedInto===id);
+  const msg="Delete “"+s.label+" · "+stmtPeriod(s)+"”"+(s.invoice?" and its invoice record "+s.invoice.no:"")+"?"+
+    (linked.length?"\n\n"+linked.length+" carryover(s) included in it become open carryovers again.":"")+
+    (s.carriedInto?"\n\nIt is also removed from the invoice it was carried into.":"");
+  if(!confirm(msg)) return;
+  linked.forEach(c=>{ c.carriedInto=null; if(c.status==="paid") c.status="carry"; });
+  if(s.carriedInto) unlinkCarry(s);
+  statements=statements.filter(x=>x.id!==id); renderInvoices(); toast("Statement deleted.",true);
+}
+function stmtPeriod(s){ return s.periodText || ((s.half||"")+" "+(s.year||"")).trim(); }
+function stmtSort(s){ return s.sort || ((+s.year||0)*100 + (s.half==="H1"?6:s.half==="H2"?12:0)); }
+function openCarries(s){   // carryovers of the same label that can go onto this statement's invoice
+  const k=normKey(s.label);
+  return statements.filter(c=>c.id!==s.id && normKey(c.label)===k && (c.carriedInto===s.id || (c.status==="carry" && !c.carriedInto)))
+                   .sort((a,b)=>stmtSort(a)-stmtSort(b));
+}
+
+/* ---- manual statements (labels without an importable statement) ---- */
+let manEditId=null, manStatus="open", manCur="€";
+function parsePeriodText(t){
+  const y=(/(?:19|20)\d\d/.exec(t)||[])[0]; let half="", sub=0, m;
+  if(m=/\bH\s*([12])\b/i.exec(t)){ half="H"+m[1]; sub=m[1]==="1"?6:12; }
+  else if(m=/\bQ\s*([1-4])\b/i.exec(t)) sub=+m[1]*3;
+  else if(m=/(?:^|\D)(0?[1-9]|1[0-2])\s*[.\/-]\s*(?:19|20)\d\d/.exec(t)) sub=+m[1];
+  else if(m=/(?:19|20)\d\d\s*[.\/-]\s*(0?[1-9]|1[0-2])(?:\D|$)/.exec(t)) sub=+m[1];
+  return {year:y?+y:new Date().getFullYear(), half, sort:(y?+y:new Date().getFullYear())*100+sub};
+}
+function setManStatus(v){ manStatus=v; document.querySelectorAll("#manStatus button").forEach(b=>b.classList.toggle("on",b.dataset.st===v)); }
+function setManCur(v){ manCur=v; document.querySelectorAll("#manCur button").forEach(b=>b.classList.toggle("on",b.dataset.cur===v)); document.getElementById("manCurLbl").textContent=v; }
+function openManualStatement(id){
+  const s=id?statements.find(x=>x.id===id):null; manEditId=s?s.id:null;
+  const labels=[...new Set(statements.map(x=>x.label))].sort((a,b)=>a.localeCompare(b));
+  document.getElementById("manLabels").innerHTML=labels.map(l=>`<option value="${gEsc(l)}">`).join("");
+  document.getElementById("manTitle").textContent=s?"Edit statement":"Add statement manually";
+  document.getElementById("manLabel").value=s?s.label:"";
+  document.getElementById("manStmt").value=s?s.stmtNo:"";
+  document.getElementById("manPeriod").value=s?stmtPeriod(s):"";
+  document.getElementById("manAmount").value=s&&s.payable!=null?(+s.payable).toFixed(2):"";
+  setManStatus(s?(s.status==="carry"?"carry":"open"):"open"); setManCur(s?(s.currency||"€"):"€");
+  document.getElementById("manModal").classList.remove("hidden");
+  setTimeout(()=>document.getElementById("manLabel").focus(),30);
+}
+function closeManualStatement(){ document.getElementById("manModal").classList.add("hidden"); manEditId=null; }
+function saveManualStatement(){
+  const label=document.getElementById("manLabel").value.trim(), stmtNo=document.getElementById("manStmt").value.trim();
+  const periodText=document.getElementById("manPeriod").value.trim(), amt=document.getElementById("manAmount").value;
+  if(!label){ toast("Enter the label."); return; }
+  if(!periodText){ toast("Enter the period (e.g. H1 2026, 01.2026 or Q3 2025)."); return; }
+  if(amt===""||!isFinite(parseFloat(amt))){ toast("Enter the amount."); return; }
+  const p=parsePeriodText(periodText);
+  const fields={label, stmtNo, periodText, year:p.year, half:p.half, sort:p.sort, payable:Math.round(parseFloat(amt)*100)/100, currency:manCur};
+  const s=manEditId?statements.find(x=>x.id===manEditId):null;
+  if(s){
+    Object.assign(s, fields);
+    if(s.status!=="paid" && !s.carriedInto) s.status=manStatus;
+  } else {
+    statements.push(Object.assign({id:"manual|"+normKey(label)+"|"+Date.now().toString(36), status:manStatus, carryover:0, source:"manual"}, fields));
+  }
+  closeManualStatement(); renderInvoices();
+  toast(manStatus==="carry"?"Saved as open carryover — it will be offered on the next invoice for "+label+".":"Statement saved.",true);
+}
+
 function renderInvoices(){
   const total=statements.length;
   const bar=document.getElementById("invFilter"), list=document.getElementById("invList");
-  if(total===0){ bar.innerHTML=""; list.innerHTML=""; saveState(); return; }
+  if(total===0){ bar.innerHTML=""; list.innerHTML='<div class="panel empty-state">No statements yet — import a royalty PDF in the <b>Royalties</b> tab, or use <b>Add statement manually</b> for labels without an importable statement.</div>'; saveState(); return; }
   // status counts for the filter bar
   const counts={all:total, open:0, paid:0, carry:0};
   statements.forEach(s=>{ const st=s.status||"open"; counts[st]=(counts[st]||0)+1; });
   const tabs=[["all","All"],["open","Open"],["paid","Paid"],["carry","Carryover"]];
   bar.innerHTML=tabs.map(([k,lbl])=>`<button class="fbtn ${invFilter===k?"on":""}" data-filter="${k}" type="button">${lbl}<span class="fcount">${counts[k]||0}</span></button>`).join("");
   bar.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{ invFilter=b.dataset.filter; renderInvoices(); });
-  const shown=statements.filter(s=>invFilter==="all"||(s.status||"open")===invFilter)
-                        .sort((a,b)=>(b.year-a.year)||b.half.localeCompare(a.half));
+  const shown=statements.filter(s=>invFilter==="all"||(s.status||"open")===invFilter).sort((a,b)=>stmtSort(b)-stmtSort(a));
   if(!shown.length){ list.innerHTML='<div class="panel empty-state">Nothing in this filter.</div>'; saveState(); return; }
   list.innerHTML = shown.map(s=>{
-    const st=s.status||"open";
+    const st=s.status||"open", host=s.carriedInto?statements.find(x=>x.id===s.carriedInto):null;
+    const carries=st==="open"?openCarries(s).filter(c=>!c.carriedInto):[];
+    const extra=[];
+    if(s.invoice) extra.push(`Invoice ${gEsc(s.invoice.no)} · ${gEsc(s.invoice.date)} · ${invMoney(s.invoice.total,s.currency)}`);
+    if(host) extra.push(`Included in ${host.invoice?"invoice "+gEsc(host.invoice.no):"the invoice"} for ${gEsc(stmtPeriod(host))}`);
+    if(carries.length) extra.push(`<span class="inv-hint">${carries.length} open carryover${carries.length>1?"s":""} of this label (${invMoney(carries.reduce((a,c)=>a+(+c.payable||0),0),s.currency)}) can be added to the invoice</span>`);
     const meta=`<div class="inv-meta">
-        <div class="inv-label">${s.label}</div>
-        <div class="inv-sub">${s.half} ${s.year}${s.stmtNo?(' · Statement '+s.stmtNo):''}${s.payable!=null?(' · '+invMoney(s.payable,s.currency)):''}</div>
+        <div class="inv-label">${gEsc(s.label)}${s.source==="manual"?'<span class="priv-tag">manual</span>':""}</div>
+        <div class="inv-sub">${gEsc(stmtPeriod(s))}${s.stmtNo?(' · Statement '+gEsc(s.stmtNo)):''}${s.payable!=null?(' · '+invMoney(s.payable,s.currency)):''}</div>
+        ${extra.map(x=>`<div class="inv-sub">${x}</div>`).join("")}
       </div>`;
     let actions;
     if(st==="paid")
-      actions=`<span class="inv-status paid">${CHECK_SVG} Paid</span><button class="link-btn" data-reopen="${s.id}" type="button">Reopen</button>`;
+      actions=`<span class="inv-status paid">${CHECK_SVG} Paid</span>${s.invoice?`<button class="link-btn" data-inv="${s.id}" type="button">Invoice PDF</button>`:""}<button class="link-btn" data-reopen="${s.id}" type="button">Reopen</button>`;
     else if(st==="carry")
-      actions=`<span class="inv-status carry">Carryover</span><button class="link-btn" data-reopen="${s.id}" type="button">Reopen</button>`;
+      actions=`<span class="inv-status carry">${host?"Carryover · invoiced":"Carryover · open"}</span><button class="link-btn" data-reopen="${s.id}" type="button">Reopen</button>`;
     else
-      actions=`<button class="btn amber" data-inv="${s.id}" type="button">Create invoice</button>
+      actions=`<button class="btn amber" data-inv="${s.id}" type="button">${s.invoice?"Edit invoice":"Create invoice"}</button>
         <button class="btn mini" data-paid="${s.id}" type="button">${CHECK_SVG} Mark paid</button>
         <button class="btn mini" data-carry="${s.id}" type="button">Carryover</button>`;
+    if(s.source==="manual") actions+=`<button class="link-btn" data-edit="${s.id}" type="button">Edit</button>`;
+    actions+=`<button class="del-x" data-del="${s.id}" type="button" title="Delete">×</button>`;
     return `<div class="inv-row ${st!=="open"?"done":""}">${meta}<div class="inv-actions">${actions}</div></div>`;
   }).join("");
   list.querySelectorAll("[data-inv]").forEach(b=>b.onclick=()=>openInvoiceEditor(b.dataset.inv));
   list.querySelectorAll("[data-paid]").forEach(b=>b.onclick=()=>setStatementStatus(b.dataset.paid,"paid"));
   list.querySelectorAll("[data-carry]").forEach(b=>b.onclick=()=>setStatementStatus(b.dataset.carry,"carry"));
   list.querySelectorAll("[data-reopen]").forEach(b=>b.onclick=()=>setStatementStatus(b.dataset.reopen,"open"));
+  list.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openManualStatement(b.dataset.edit));
+  list.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>removeStatement(b.dataset.del));
   saveState();
 }
 
-/* ---- invoice editor ---- */
-let editingStmt=null;
+/* ---- invoice editor: one line per statement, open carryovers of the same label offered as extra lines ---- */
+let editingStmt=null, ivLines=[], ivIntroDirty=false;
+function mainLineDesc(s){ return s.stmtNo ? "Royalties as per Statement "+s.stmtNo+" ("+stmtPeriod(s)+")" : "Royalties "+stmtPeriod(s); }
+function carryLineDesc(c){ return c.stmtNo ? "Carryover from Royalty Statement "+c.stmtNo+" ("+stmtPeriod(c)+")" : "Carryover from period "+stmtPeriod(c); }
+function nextInvoiceNo(){
+  const y=new Date().getFullYear(); let max=0, w=3;
+  statements.forEach(s=>{ const m=s.invoice&&/^SM-(\d{4})-(\d+)$/.exec(s.invoice.no||""); if(m&&+m[1]===y&&+m[2]>max){ max=+m[2]; w=m[2].length; } });
+  return max ? "SM-"+y+"-"+String(max+1).padStart(w,"0") : "SM-"+y+"-";
+}
+function buildIntro(){
+  const nos=[]; ivLines.forEach(l=>{ if(l.kind==="extra"||(l.kind==="carry"&&!l.on)) return;
+    const st=statements.find(x=>x.id===l.stmtId); if(st&&st.stmtNo&&!nos.includes(st.stmtNo)) nos.push(st.stmtNo); });
+  if(!nos.length) return "we hereby invoice you for the following royalties:";
+  const list=nos.length===1?nos[0]:nos.slice(0,-1).join(", ")+" and "+nos[nos.length-1];
+  return "as per Royalty Statement"+(nos.length>1?"s ":" ")+list+", we hereby invoice you for the following amount:";
+}
 function openInvoiceEditor(id){
   const s=statements.find(x=>x.id===id); if(!s) return; editingStmt=s;
-  const key=normKey(s.label);
-  document.getElementById("invModal").classList.remove("hidden");
+  const inv=s.invoice||null, key=normKey(s.label);
+  const savedMain=inv&&inv.lines.find(l=>l.kind==="main");
+  ivLines=[{kind:"main", stmtId:s.id, desc:savedMain?savedMain.desc:mainLineDesc(s), amount:savedMain?savedMain.amount:(+s.payable||0), on:true}];
+  openCarries(s).forEach(c=>{ const saved=inv&&inv.lines.find(l=>l.kind==="carry"&&l.stmtId===c.id);
+    ivLines.push({kind:"carry", stmtId:c.id, desc:saved?saved.desc:carryLineDesc(c), amount:saved?saved.amount:(+c.payable||0), on:inv?!!saved:true,
+      meta:"Open carryover · "+stmtPeriod(c)+(c.stmtNo?" · Statement "+c.stmtNo:"")}); });
+  if(inv) inv.lines.filter(l=>l.kind==="extra").forEach(l=>ivLines.push({kind:"extra", desc:l.desc, amount:l.amount, on:true}));
+  else if(+s.carryover) ivLines.push({kind:"extra", desc:"Carryover from previous period", amount:+s.carryover, on:true, meta:"Carryover stated on this statement"});
   const set=(elid,v)=>{ const e=document.getElementById(elid); if(e) e.value=v; };
-  set("ivNo","SM-"+s.year+"-");
-  set("ivDate",todayDE());
-  set("ivRecipient",s.label);
-  set("ivAddr",labelAddresses[key]||"");
-  set("ivGreet",s.label);
-  set("ivStmt",s.stmtNo||"");
-  set("ivPeriod",s.half+" "+s.year);
-  set("ivAmount",(s.payable!=null?s.payable:0).toFixed(2));
-  set("ivCarry",(s.carryover!=null?s.carryover:0).toFixed(2));
-  document.getElementById("ivCur").textContent=s.currency||"€";
+  set("ivNo", inv?inv.no:nextInvoiceNo());
+  set("ivDate", inv?inv.date:todayDE());
+  set("ivRecipient", inv&&inv.recipient||s.label);
+  set("ivAddr", labelAddresses[key]||"");
+  set("ivGreet", inv&&inv.greeting||s.label);
+  ivIntroDirty=!!(inv&&inv.intro);
+  set("ivIntro", inv&&inv.intro?inv.intro:buildIntro());
+  document.getElementById("ivTitle").textContent=inv?"Edit invoice "+inv.no:"Create invoice";
+  renderIvLines();
+  document.getElementById("invModal").classList.remove("hidden");
+}
+function renderIvLines(){
+  const cur=editingStmt?(editingStmt.currency||"€"):"€";
+  const box=document.getElementById("ivLines");
+  box.innerHTML=ivLines.map((l,i)=>`<div class="iv-line${l.on?"":" off"}">
+      ${l.kind==="carry"?`<input type="checkbox" data-i="${i}" ${l.on?"checked":""} title="Include on this invoice">`:"<span></span>"}
+      <div><input type="text" class="iv-desc" data-i="${i}" value="${gEsc(l.desc)}">${l.meta?`<div class="iv-meta">${gEsc(l.meta)}</div>`:""}</div>
+      <div class="rv-amt"><span>${gEsc(cur)}</span><input type="number" step="0.01" class="iv-amt" data-i="${i}" value="${(+l.amount||0).toFixed(2)}"></div>
+      ${l.kind==="extra"?`<button class="del-x" data-i="${i}" type="button" title="Remove line">×</button>`:"<span></span>"}
+    </div>`).join("");
+  box.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.onchange=()=>{ ivLines[+cb.dataset.i].on=cb.checked; if(!ivIntroDirty) document.getElementById("ivIntro").value=buildIntro(); renderIvLines(); });
+  box.querySelectorAll(".iv-desc").forEach(inp=>inp.oninput=()=>{ ivLines[+inp.dataset.i].desc=inp.value; });
+  box.querySelectorAll(".iv-amt").forEach(inp=>inp.oninput=()=>{ ivLines[+inp.dataset.i].amount=parseFloat(inp.value)||0; updateInvTotal(); });
+  box.querySelectorAll(".del-x").forEach(b=>b.onclick=()=>{ ivLines.splice(+b.dataset.i,1); renderIvLines(); });
   updateInvTotal();
 }
+function addIvLine(){ ivLines.push({kind:"extra", desc:"", amount:0, on:true}); renderIvLines(); const d=document.querySelectorAll("#ivLines .iv-desc"); if(d.length) d[d.length-1].focus(); }
 function updateInvTotal(){
-  const val=id=>parseFloat((document.getElementById(id)||{}).value)||0;
   const cur=editingStmt?(editingStmt.currency||"€"):"€";
-  const roy=val("ivAmount"), carry=val("ivCarry"), total=roy+carry;
+  const used=ivLines.filter(l=>l.on), total=used.reduce((a,l)=>a+(+l.amount||0),0);
   const h=document.getElementById("ivTotalHint"); if(!h) return;
-  h.innerHTML = carry
-    ? `Invoice total: <b>${invMoney(roy,cur)}</b> royalties + <b>${invMoney(carry,cur)}</b> carryover = <b>${invMoney(total,cur)}</b>`
+  h.innerHTML = used.length>1
+    ? `Invoice total: ${used.map(l=>`<b>${invMoney(l.amount,cur)}</b>`).join(" + ")} = <b>${invMoney(total,cur)}</b>`
     : `Invoice total: <b>${invMoney(total,cur)}</b>`;
 }
-function closeInvoiceEditor(){ document.getElementById("invModal").classList.add("hidden"); editingStmt=null; }
+function closeInvoiceEditor(){ document.getElementById("invModal").classList.add("hidden"); editingStmt=null; ivLines=[]; }
 function downloadInvoice(){
   if(!editingStmt) return;
-  const v=id=>{ const e=document.getElementById(id); return e?e.value.trim():""; };
+  const s=editingStmt, v=id=>{ const e=document.getElementById(id); return e?e.value.trim():""; };
+  const used=ivLines.filter(l=>l.on && (l.desc.trim()||+l.amount));
+  if(used.some(l=>!l.desc.trim())){ toast("Every invoice line needs a description."); return; }
+  const lines=used.map(l=>({kind:l.kind, stmtId:l.stmtId||null, desc:l.desc.trim(), amount:Math.round((+l.amount||0)*100)/100}));
+  const total=lines.reduce((a,l)=>a+l.amount,0);
   const d={
-    invoiceNo:v("ivNo")||"SM",
-    date:v("ivDate")||todayDE(),
-    place:issuer.place,
-    recipientName:v("ivRecipient"),
-    recipientAddr:v("ivAddr"),
-    greetingName:v("ivGreet")||v("ivRecipient"),
-    stmtNo:v("ivStmt"),
-    periodText:v("ivPeriod"),
-    amount:parseFloat(v("ivAmount"))||0,
-    carryover:parseFloat(v("ivCarry"))||0,
-    currency:editingStmt.currency||"€"
+    invoiceNo:v("ivNo")||"SM", date:v("ivDate")||todayDE(), place:issuer.place,
+    recipientName:v("ivRecipient"), recipientAddr:v("ivAddr"), greetingName:v("ivGreet")||v("ivRecipient"),
+    intro:v("ivIntro")||buildIntro(), lines, total, currency:s.currency||"€"
   };
-  labelAddresses[normKey(editingStmt.label)]=d.recipientAddr;   // remember address for next time
-  editingStmt.carryover=d.carryover;                             // remember carryover on the statement
-  saveState();
-  try{ generateInvoicePDF(d); toast("Invoice PDF downloaded.",true); }
-  catch(e){ toast("PDF failed: "+e.message); }
-  closeInvoiceEditor();
+  try{ generateInvoicePDF(d); }
+  catch(e){ toast("PDF failed: "+e.message); return; }
+  labelAddresses[normKey(s.label)]=d.recipientAddr;   // remember address for next time
+  s.invoice={no:d.invoiceNo, date:d.date, intro:ivIntroDirty?d.intro:"", recipient:d.recipientName, greeting:d.greetingName, lines, total};
+  // link the carryovers that are on this invoice, release the ones that were taken off again
+  openCarries(s).forEach(c=>{ const on=lines.some(l=>l.kind==="carry"&&l.stmtId===c.id); if(on) c.carriedInto=s.id; else if(c.carriedInto===s.id) c.carriedInto=null; });
+  saveState(); toast("Invoice PDF downloaded.",true);
+  closeInvoiceEditor(); renderInvoices();
 }
 
 /* ---- jsPDF generation ---- */
@@ -2329,23 +2485,23 @@ function generateInvoicePDF(d){
   y=88; doc.setFontSize(11);
   doc.text("Hello "+d.greetingName+",", M, y);
   y+=9;
-  doc.text(doc.splitTextToSize("as per Royalty Statement "+d.stmtNo+", we hereby invoice you for the following amount:", W-2*M), M, y);
-  y+=14;
+  const intro=doc.splitTextToSize(d.intro, W-2*M); doc.text(intro, M, y);
+  y+=intro.length*5+9;
   // table
   const tX=M, tW=W-2*M, aW=42, dW=tW-aW, rH=12;
   doc.setDrawColor(30); doc.setLineWidth(0.3);
   const row=(desc,amt,style,sz)=>{
     doc.setFont("helvetica",style||"normal"); doc.setFontSize(sz||10.5);
-    doc.rect(tX,y,dW,rH); doc.rect(tX+dW,y,aW,rH);
-    doc.text(desc, tX+3, y+rH/2+1.6, {maxWidth:dW-6});
-    doc.text(amt, tX+dW+aW-3, y+rH/2+1.6, {align:"right"});
-    y+=rH;
+    const txt=doc.splitTextToSize(desc, dW-6), h=Math.max(rH, txt.length*4.6+7.4);   // long descriptions wrap
+    doc.rect(tX,y,dW,h); doc.rect(tX+dW,y,aW,h);
+    doc.text(txt, tX+3, y+h/2+1.6-(txt.length-1)*2.3);
+    doc.text(amt, tX+dW+aW-3, y+h/2+1.6, {align:"right"});
+    y+=h;
   };
   row("Type of service","Amount","bold",10.5);
-  row("Royalties as per Statement "+d.stmtNo+" ("+d.periodText+")", invMoney(d.amount,d.currency), "italic", 10);
-  if(d.carryover){ row("Carryover from previous period", invMoney(d.carryover,d.currency), "italic", 10); }
+  d.lines.forEach(l=>row(l.desc, invMoney(l.amount,d.currency), "italic", 10));
   row("VAT (not applicable under § 19 (1) UStG)","(-)","normal",10);
-  row("Total", invMoney(d.amount+(d.carryover||0),d.currency), "bold", 10.5);
+  row("Total", invMoney(d.total,d.currency), "bold", 10.5);
   y+=12;
   doc.setFont("helvetica","normal"); doc.setFontSize(10.5);
   doc.text(doc.splitTextToSize("The invoice amount is due immediately without deduction, payable to the account stated above.", W-2*M), M, y);
@@ -2399,7 +2555,15 @@ document.getElementById("royManualBtn").onclick=openReviewManual;
 document.getElementById("ivClose").onclick=closeInvoiceEditor;
 document.getElementById("ivCancel").onclick=closeInvoiceEditor;
 document.getElementById("ivDownload").onclick=downloadInvoice;
-["ivAmount","ivCarry"].forEach(id=>{ const e=document.getElementById(id); if(e) e.oninput=updateInvTotal; });
+document.getElementById("ivAddLine").onclick=addIvLine;
+document.getElementById("ivIntro").oninput=()=>{ ivIntroDirty=true; };
+document.getElementById("invManualBtn").onclick=()=>openManualStatement(null);
+document.getElementById("manClose").onclick=closeManualStatement;
+document.getElementById("manCancel").onclick=closeManualStatement;
+document.getElementById("manSave").onclick=saveManualStatement;
+document.querySelectorAll("#manStatus button").forEach(b=>b.onclick=()=>setManStatus(b.dataset.st));
+document.querySelectorAll("#manCur button").forEach(b=>b.onclick=()=>setManCur(b.dataset.cur));
+document.getElementById("manModal").addEventListener("click",e=>{ if(e.target.id==="manModal") closeManualStatement(); });
 document.getElementById("invModal").addEventListener("click",e=>{ if(e.target.id==="invModal") closeInvoiceEditor(); });
 
 document.getElementById("bkAdd").onclick=saveBooking;
