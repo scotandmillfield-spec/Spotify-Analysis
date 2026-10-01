@@ -141,11 +141,6 @@ h1 em{font-style:normal; color:var(--amber)}
 .forecast .fc-main span{color:var(--muted); font-weight:500; font-size:13px}
 .forecast .fc-main.fc-flat{font-size:14px; color:var(--muted); font-weight:500}
 
-.method{margin-top:42px; padding:22px; color:var(--muted); font-size:13px; line-height:1.7}
-.method h2{font-family:'Space Grotesk',sans-serif; color:var(--text); font-size:15px; margin:0 0 10px}
-.method code{font-family:'JetBrains Mono',monospace; background:var(--ink); padding:1px 6px; border-radius:4px; color:var(--text); font-size:12px}
-.method ul{margin:8px 0 0; padding-left:18px}
-.method li{margin:5px 0}
 footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); color:var(--faint); font-size:12px;
   font-family:'JetBrains Mono',monospace; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px}
 
@@ -933,18 +928,6 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
     </div>
   </div>
 
-  <section class="panel method">
-    <h2>Method &amp; reading notes</h2>
-    <ul>
-      <li><b>Day 1</b> = first day with streams (release day). Leading zero days are stripped; calendar gaps after release are filled with 0.</li>
-      <li><b>Week n</b> bundles days <code>(n-1)·7+1 … n·7</code> since release.</li>
-      <li>Columns are auto-detected: the first date-parseable column is the date, the first numeric column is streams.</li>
-      <li>Re-uploading a single <b>merges</b> by date instead of duplicating — newer values overwrite, new days are appended, color and visibility stay put. Matching ignores case, punctuation and Spotify's <code style="font-size:11px">-timeline</code> / counter suffixes (e.g. <code style="font-size:11px">(1)</code>), so repeat downloads land on the same single.</li>
-      <li>Singles differ in age — lines run only as far as their data goes, and the <b>shared days</b> figure marks the only window all loaded singles cover.</li>
-      <li>Your data <b>auto-saves in this browser</b> and reloads on open. It lives per device/browser — use <b>Backup</b> to download a JSON copy and <b>Restore</b> to load it on another device or after clearing browser data.</li>
-      <li><b>Royalties</b> are a separate set from streaming singles. Melino PDF statements are read in-browser; each track's earnings are summed per half-year. You always confirm the detected figures before they're saved, and re-importing the same half-year overwrites it rather than duplicating.</li>
-    </ul>
-  </section>
 
   <footer>
     <span id="footStamp"></span>
