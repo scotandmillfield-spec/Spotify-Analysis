@@ -364,6 +364,23 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 .gl-fields dt{font-weight:600} .gl-fields dd{margin:0; color:var(--muted)}
 @media(max-width:640px){ .gl-fields div{grid-template-columns:1fr; gap:3px} .pv-row select{max-width:100%} }
 .ctrl button:disabled{opacity:.35; cursor:not-allowed}
+/* Stream analyzer */
+.st-label{background:var(--ink); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:Inter; font-size:13px; padding:7px 10px; width:170px}
+.st-label:focus{outline:none; border-color:var(--amber)}
+.st-amt{font-family:'JetBrains Mono',monospace; font-size:13.5px; color:var(--text); min-width:84px; text-align:right}
+.st-sel{background:var(--ink); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:Inter; font-size:13px; padding:7px 10px; max-width:100%}
+.rc-box{padding:6px 18px}
+.rc-line{display:flex; gap:14px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--line); font-size:13.5px}
+.rc-line:last-child{border-bottom:none}
+.rc-line span{color:var(--muted)}
+.rc-badge{display:inline-grid; place-items:center; width:24px; height:24px; flex:none; border-radius:50%; font-weight:700; font-size:13px}
+.rc-line .rc-badge.ok,.rc-badge.ok{background:rgba(82,224,160,.14); color:#52E0A0; border:1px solid rgba(82,224,160,.45)}
+.rc-line .rc-badge.bad,.rc-badge.bad{background:rgba(255,107,138,.12); color:#FF6B8A; border:1px solid rgba(255,107,138,.45)}
+.rc-line .rc-badge.warn,.rc-badge.warn{background:rgba(255,180,84,.12); color:#FFB454; border:1px solid rgba(255,180,84,.45)}
+.rc-note{font-size:12.5px; color:var(--muted); padding:10px 14px; margin:0}
+.st-row .inv-actions{gap:10px}
+.st-row .inv-sub,.st-row .inv-label{overflow-wrap:anywhere}
+@media(max-width:640px){ .st-row{flex-direction:column; align-items:stretch} .st-row .inv-actions{justify-content:flex-start} .st-label{flex:1; min-width:0} }
 </style>
 </head>
 <body>
@@ -381,6 +398,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <button class="tab" data-tab="assets" type="button">Assets</button>
       <button class="tab" data-tab="books" type="button">Journal / BWA</button>
       <button class="tab" data-tab="gema" type="button">GEMA</button>
+      <button class="tab" data-tab="streams" type="button">Stream-Analyzer</button>
       <button class="tab tab-gear" data-tab="settings" type="button" title="Settings" aria-label="Settings">
         <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/><path d="M19.4 13a7.6 7.6 0 000-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 00-1.7-1l-.4-2.5H8.8l-.4 2.5a7.6 7.6 0 00-1.7 1l-2.4-1-2 3.4L4.6 11a7.6 7.6 0 000 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 001.7 1l.4 2.5h6.4l.4-2.5a7.6 7.6 0 001.7-1l2.4 1 2-3.4-2-1.6z"/></svg>
       </button>
@@ -639,35 +657,7 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <section class="section">
         <div class="sec-head"><h2><span class="sec-no">3</span> Pivot-Analyse</h2>
           <p>Zeilen, Spalten und Wert frei wählen. Ein Klick auf eine Zeilenbeschriftung filtert darauf (Drill-down), ein Klick auf einen Spaltenkopf sortiert.</p></div>
-        <div class="panel pv-panel">
-          <div class="pv-row" id="pvPresets"><span class="ctrl-label">Vorlagen</span></div>
-          <div class="pv-row">
-            <span class="ctrl-label">Zeilen</span><select id="pvRow"></select>
-            <span class="ctrl-label">dann</span><select id="pvRow2"></select>
-            <span class="ctrl-label">Spalten</span><select id="pvCol"></select>
-            <span class="ctrl-label">Wert</span><select id="pvMeasure"></select>
-          </div>
-          <div class="pv-row">
-            <span class="ctrl-label">Anzeige</span>
-            <div class="ctrl" id="pvMode">
-              <button data-mode="val" type="button">Werte</button>
-              <button data-mode="pct" type="button">% der Spalte</button>
-              <button data-mode="delta" type="button">Δ zur Vorspalte</button>
-            </div>
-          </div>
-          <div class="pv-row">
-            <span class="ctrl-label">Filter</span>
-            <span id="pvFilterChips" style="display:contents"></span>
-            <select id="pvFDim"></select><select id="pvFVal"></select>
-            <button class="btn mini" id="pvFAdd" type="button">+ Filter</button>
-          </div>
-          <div class="tbl-wrap"><table class="mtable pv-table" id="pvTable"></table></div>
-          <div class="pv-foot">
-            <span class="info" id="pvInfo"></span>
-            <button class="btn mini" id="pvMore" type="button"></button>
-            <button class="btn mini" id="pvCsv" type="button">CSV exportieren</button>
-          </div>
-        </div>
+        <div id="pvMount"></div>
       </section>
 
       <section class="section">
@@ -684,6 +674,61 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <div class="gl-grid" id="gemaGlossary"></div>
       <h3 class="gl-sub">Die wichtigsten Spalten des Detailreports</h3>
       <dl class="panel gl-fields" id="gemaFields"></dl>
+    </section>
+  </div>
+
+  <div class="tab-panel" id="tab-streams" hidden>
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">1</span> Label-Abrechnungen</h2>
+        <p>Verkaufs- und Streaming-Reports der Labels (Excel oder CSV, auch viele tausend Zeilen) hier ablegen. Jede Datei wird als eigene Abrechnung gespeichert.</p></div>
+      <div class="dropzone" id="stDrop">
+        <div class="dz-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg></div>
+        <div class="dz-text"><div class="t">Label-Report (.xlsx / .csv) hierher ziehen oder klicken</div>
+          <div class="s">Wird nur im Browser gelesen. Dieselbe Datei erneut importiert = aktualisiert statt doppelt.</div></div>
+        <div class="dz-actions"><button class="btn" id="stClearBtn" type="button">Alle Label-Abrechnungen löschen</button></div>
+        <input type="file" id="stInput" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple hidden>
+      </div>
+      <div id="stList" style="margin-top:16px"></div>
+      <div class="persist-hint" id="stHint"></div>
+    </section>
+
+    <div class="empty hidden" id="stEmpty"><h3>Noch keine Label-Abrechnung geladen</h3><p>Lade oben einen Report — danach erscheinen Überblick, Nachvollzug des Statement-Betrags, Pivot-Analyse und Einzelpositionen.</p></div>
+
+    <div id="stDash">
+      <section class="section">
+        <div class="sec-head"><h2><span class="sec-no">2</span> Überblick</h2>
+          <p>Kennzahlen der jüngsten Periode im Vergleich zur vorherigen — und alle Perioden nach Plattform. Aktive Pivot-Filter gelten auch hier.</p></div>
+        <div class="g-kpis" id="stKpis"></div>
+        <div class="panel g-chart"><canvas id="stChart"></canvas></div>
+      </section>
+
+      <section class="section">
+        <div class="sec-head"><h2><span class="sec-no">3</span> Statement nachvollziehen</h2>
+          <p>Wie der abgerechnete Betrag zustande kommt: Summenprüfung, Rechenweg je Vertrag, Nutzungsarten und der Abgleich mit Spotify for Artists.</p></div>
+        <div class="pv-row"><span class="ctrl-label">Abrechnung</span><select id="stReconSel" class="st-sel"></select></div>
+        <div id="stRecon"></div>
+      </section>
+
+      <section class="section">
+        <div class="sec-head"><h2><span class="sec-no">4</span> Pivot-Analyse</h2>
+          <p>Zeilen, Spalten und Wert frei wählen. Ein Klick auf eine Zeilenbeschriftung filtert darauf (Drill-down), ein Klick auf einen Spaltenkopf sortiert.</p></div>
+        <div id="spMount"></div>
+      </section>
+
+      <section class="section">
+        <div class="sec-head"><h2><span class="sec-no">5</span> Einzelpositionen</h2>
+          <p>Die Rohzeilen hinter der Pivot-Tabelle — mit denselben Filtern, sortiert nach Betrag.</p></div>
+        <div class="panel tbl-wrap"><table class="mtable g-raw" id="stRaw"></table></div>
+        <div class="pv-foot"><span class="info" id="stRawInfo"></span><button class="btn mini" id="stRawMore" type="button">Weitere anzeigen</button></div>
+      </section>
+    </div>
+
+    <section class="section">
+      <div class="sec-head"><h2><span class="sec-no">?</span> Begriffe erklärt</h2>
+        <p>Was die Nutzungsarten und Spalten im Label-Report bedeuten. Arten, die in deinen Abrechnungen vorkommen, sind hervorgehoben — mit deinem Betrag.</p></div>
+      <div class="gl-grid" id="stGlossary"></div>
+      <h3 class="gl-sub">Die Spalten des Reports</h3>
+      <dl class="panel gl-fields" id="stFields"></dl>
     </section>
   </div>
 
@@ -727,14 +772,14 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 
     <section class="section">
       <div class="sec-head"><h2><span class="sec-no">&sect;</span> Data</h2>
-        <p>Backup and restore apply to <b>everything</b> — singles, royalties, statements, invoices, GEMA statements, the chart of accounts and the journal. They live only in this browser, so keep a backup.</p></div>
+        <p>Backup and restore apply to <b>everything</b> — singles, royalties, statements, invoices, GEMA statements, label sales reports, the chart of accounts and the journal. They live only in this browser, so keep a backup.</p></div>
       <div class="panel issuer-panel">
         <div class="data-actions">
           <button class="btn amber" id="sBackup" type="button">Backup (download JSON)</button>
           <button class="btn" id="sRestore" type="button">Restore from file…</button>
           <button class="btn danger" id="sClearAll" type="button">Clear all data</button>
         </div>
-        <div class="data-note">“Clear all data” permanently deletes every single, royalty, statement, invoice address, GEMA statement and journal booking, and resets the chart of accounts to the default. This cannot be undone — back up first if in doubt.</div>
+        <div class="data-note">“Clear all data” permanently deletes every single, royalty, statement, invoice address, GEMA statement, label sales report and journal booking, and resets the chart of accounts to the default. This cannot be undone — back up first if in doubt.</div>
       </div>
     </section>
   </div>
@@ -1206,7 +1251,7 @@ function loadState(){
   try{ rebuildFromState(JSON.parse(raw)); return true; }catch(e){ return false; }
 }
 function exportBackup(){
-  const st=serialize(); st.gema=gemaSerialize();
+  const st=serialize(); st.gema=gemaSerialize(); st.streams=stSerialize();
   const blob=new Blob([JSON.stringify(st,null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob), a=document.createElement("a");
   a.href=url; a.download="single-analytics-backup-"+new Date().toISOString().slice(0,10)+".json"; a.click();
@@ -1218,6 +1263,7 @@ function importBackup(file){
       if(!st||!Array.isArray(st.singles)) throw new Error("not a valid backup file");
       rebuildFromState(st);
       if(st.gema && Array.isArray(st.gema.sets)){ gemaLoadFrom(st.gema); gemaSave(); }   // older backups without GEMA leave it untouched
+      if(st.streams && Array.isArray(st.streams.sets)){ stLoadFrom(st.streams); stSave(); }   // same for label statements
       renderEverything();
       toast("Backup restored.",true);
     }catch(e){ toast("Restore failed: "+e.message); } };
@@ -1227,13 +1273,14 @@ function importBackup(file){
 function renderEverything(){
   renderAll(); renderRoyalties(); renderInvoices(); renderBooks(); renderAssets();
   if(typeof renderGema==="function") renderGema();
+  if(typeof renderStreams==="function") renderStreams();
   if(typeof renderSettings==="function") renderSettings();
   if(typeof renderKontenplan==="function") renderKontenplan();
 }
 function clearAllData(){
-  if(!confirm("Delete ALL data — singles, royalties, statements, invoices, GEMA statements and the entire journal? The chart of accounts resets to default. This cannot be undone.")) return;
+  if(!confirm("Delete ALL data — singles, royalties, statements, invoices, GEMA statements, label sales reports and the entire journal? The chart of accounts resets to default. This cannot be undone.")) return;
   try{ localStorage.removeItem(STORE_KEY); localStorage.removeItem(GEMA_KEY); }catch(e){}
-  gemaSets=[];
+  gemaSets=[]; stSets=[]; IDB.del(ST_IDB_KEY).catch(()=>{});
   singles=[]; if(typeof visible==="object") for(const k in visible) delete visible[k];
   royaltyTracks=[]; statements=[]; invFilter="all"; labelAddresses={};
   issuer=Object.assign({}, ISSUER_DEFAULT);
@@ -1562,12 +1609,14 @@ function switchTab(name){
   document.getElementById("tab-assets").hidden = name!=="assets";
   document.getElementById("tab-books").hidden = name!=="books";
   document.getElementById("tab-gema").hidden = name!=="gema";
+  document.getElementById("tab-streams").hidden = name!=="streams";
   document.getElementById("tab-settings").hidden = name!=="settings";
   if(name==="royalties") renderRoyalties();
   if(name==="invoices") renderInvoices();
   if(name==="assets") renderAssets();
   if(name==="books") renderBooks();
   if(name==="gema") renderGema();
+  if(name==="streams") renderStreams();
   if(name==="settings"){ renderSettings(); renderKontenplan(); }
 }
 
@@ -2504,7 +2553,7 @@ const GEMA_VIEW_DEFAULT={row:"werk", row2:"", col:"sparte", measure:"gebucht", m
 
 let gemaSets=[];      // {id:"YYYY-MM-DD", termin:"DD.MM.YYYY", files:[], importedAt, raw:[{field:string}], _rows}
 let gView=JSON.parse(JSON.stringify(GEMA_VIEW_DEFAULT));
-let gemaChart=null, gLimit=50, gRawLimit=25;
+let gemaChart=null, gRawLimit=25;
 
 /* ---- helpers ---- */
 function gNormHead(h){ return String(h||"").replace(/^﻿/,"").toLowerCase().replace(/ä/g,"a").replace(/ö/g,"o").replace(/ü/g,"u").replace(/ß/g,"ss").replace(/[^a-z0-9]/g,""); }
@@ -2526,29 +2575,10 @@ function gFmt(n, money){
 }
 function gEsc(s){ return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
-/* ---- compact column-wise storage ---- */
-function gEncode(rows){
-  const cols={};
-  Object.keys(GEMA_FIELDS).forEach(f=>{
-    const dict=[], pos=new Map(), idx=new Array(rows.length);
-    rows.forEach((r,i)=>{ const v=r[f]==null?"":String(r[f]); let p=pos.get(v); if(p===undefined){ p=dict.length; dict.push(v); pos.set(v,p); } idx[i]=p; });
-    if(dict.length<=1) cols[f]={d:dict};
-    else { const w=(dict.length-1).toString(36).length; cols[f]={d:dict, w, i:idx.map(p=>p.toString(36).padStart(w,"0")).join("")}; }
-  });
-  return {n:rows.length, cols};
-}
-function gDecode(enc){
-  const n=+enc.n||0, rows=Array.from({length:n},()=>({}));
-  Object.keys(enc.cols||{}).forEach(f=>{ const c=enc.cols[f];
-    if(!c.i){ const v=(c.d&&c.d[0])||""; rows.forEach(r=>r[f]=v); return; }
-    for(let k=0;k<n;k++) rows[k][f]=c.d[parseInt(c.i.substr(k*c.w,c.w),36)]||"";
-  });
-  return rows;
-}
-function gemaSerialize(){ return {v:1, sets:gemaSets.map(s=>({id:s.id, termin:s.termin, files:s.files, importedAt:s.importedAt, data:gEncode(s.raw)}))}; }
+function gemaSerialize(){ return {v:1, sets:gemaSets.map(s=>({id:s.id, termin:s.termin, files:s.files, importedAt:s.importedAt, data:colEncode(s.raw, Object.keys(GEMA_FIELDS))}))}; }
 function gemaLoadFrom(st){
   gemaSets=[];
-  ((st&&st.sets)||[]).forEach(s=>{ try{ if(s&&s.id&&s.data) gemaSets.push({id:s.id, termin:s.termin||s.id, files:s.files||[], importedAt:s.importedAt||null, raw:gDecode(s.data)}); }catch(e){} });
+  ((st&&st.sets)||[]).forEach(s=>{ try{ if(s&&s.id&&s.data) gemaSets.push({id:s.id, termin:s.termin||s.id, files:s.files||[], importedAt:s.importedAt||null, raw:colDecode(s.data)}); }catch(e){} });
   gemaSets.sort((a,b)=>a.id.localeCompare(b.id));
 }
 function gemaSave(){
@@ -2564,15 +2594,8 @@ function gemaLoad(){
 }
 function gSaveView(){ try{ localStorage.setItem(GEMA_VIEW_KEY, JSON.stringify(gView)); }catch(e){} }
 function gSanitizeView(){
-  if(!GEMA_DIM[gView.row]) gView.row="werk";
-  if(gView.row2 && (!GEMA_DIM[gView.row2]||gView.row2===gView.row)) gView.row2="";
-  if(gView.col && !GEMA_DIM[gView.col]) gView.col="";
-  if(!GEMA_MEASURES.some(m=>m.k===gView.measure)) gView.measure="gebucht";
-  if(!["val","pct","delta"].includes(gView.mode)) gView.mode="val";
-  if(!Array.isArray(gView.filters)) gView.filters=[];
-  gView.filters=gView.filters.filter(f=>f&&GEMA_DIM[f.dim]);
   if(!Array.isArray(gView.hidden)) gView.hidden=[];
-  if(!gView.sort||typeof gView.sort!=="object") gView.sort={by:"total",dir:-1};
+  if(typeof gemaPV!=="undefined") gemaPV.sanitize();
 }
 
 /* ---- import ---- */
@@ -2651,148 +2674,11 @@ function gDerive(r, set){
 }
 function gRows(set){ if(!set._rows) set._rows=set.raw.map(r=>gDerive(r,set)); return set._rows; }
 function gActiveSets(){ return gemaSets.filter(s=>!gView.hidden.includes(s.id)); }
-function gFiltered(){
-  const out=[], fs=gView.filters;
-  gActiveSets().forEach(s=>gRows(s).forEach(r=>{ if(fs.every(f=>r[f.dim]===f.val)) out.push(r); }));
-  return out;
-}
 function gValLabel(dim, v){ return dim==="set" ? gSetLabel(v) : v; }
 function gValNote(dim, v){
   if(dim==="sparte"){ const i=gemaInfo(v); return {sub:i.name, title:i.name+" — "+i.text.replace(/<[^>]+>/g,"")}; }
   return null;
 }
-function gOrderVals(dim, rows, measure){
-  const tot=new Map(); rows.forEach(r=>tot.set(r[dim],(tot.get(r[dim])||0)+r.m[measure]));
-  const keys=[...tot.keys()];
-  if(GEMA_DIM[dim].order==="asc") return keys.sort((a,b)=>String(a).localeCompare(String(b),"de",{numeric:true}));
-  return keys.sort((a,b)=>Math.abs(tot.get(b))-Math.abs(tot.get(a)) || String(a).localeCompare(String(b),"de"));
-}
-
-/* ---- pivot ---- */
-const GP_MAXCOLS=24;
-function gPivot(rows){
-  const v=gView, m=v.measure, C=v.col;
-  let colKeys=C ? gOrderVals(C, rows, m) : ["__all"], other=false;
-  if(C && colKeys.length>GP_MAXCOLS){ colKeys=colKeys.slice(0,GP_MAXCOLS); other=true; }
-  const ci=new Map(colKeys.map((c,i)=>[c,i])), nc=colKeys.length+(other?1:0);
-  const groups=new Map(), colTot=new Array(nc).fill(0); let grand=0;
-  rows.forEach(r=>{
-    const x=r.m[m], c=C ? (ci.has(r[C])?ci.get(r[C]):colKeys.length) : 0;
-    let g=groups.get(r[v.row]); if(!g){ g={key:r[v.row], vals:new Array(nc).fill(0), tot:0, subs:new Map()}; groups.set(r[v.row],g); }
-    g.vals[c]+=x; g.tot+=x;
-    if(v.row2){ let s=g.subs.get(r[v.row2]); if(!s){ s={key:r[v.row2], vals:new Array(nc).fill(0), tot:0}; g.subs.set(r[v.row2],s); } s.vals[c]+=x; s.tot+=x; }
-    colTot[c]+=x; grand+=x;
-  });
-  const list=[...groups.values()].map(g=>({...g, subs:[...g.subs.values()]}));
-  const sorter=gSorter(v.row), sub=gSorter(v.row2);
-  list.sort(sorter); list.forEach(g=>g.subs.sort(sub));
-  return {colKeys, other, groups:list, colTot, grand, nc};
-}
-function gSorter(dim){
-  const s=gView.sort||{by:"total",dir:-1};
-  return (a,b)=>{
-    if(s.by==="label") return s.dir*String(gValLabel(dim,a.key)).localeCompare(String(gValLabel(dim,b.key)),"de",{numeric:true});
-    const A=s.by==="total"?a.tot:(a.vals[s.by]||0), B=s.by==="total"?b.tot:(b.vals[s.by]||0);
-    return s.dir*(A-B) || String(a.key).localeCompare(String(b.key),"de");
-  };
-}
-function gCells(vals, tot, P, money){
-  const mode=gView.mode, C=gView.col; let h="";
-  vals.forEach((x,i)=>{
-    let txt;
-    if(mode==="pct") txt = P.colTot[i] ? (x/P.colTot[i]*100).toLocaleString("de-DE",{maximumFractionDigits:1,minimumFractionDigits:1})+" %" : '<span class="zero">–</span>';
-    else if(mode==="delta" && C && i>0 && !(P.other && i===P.nc-1)){
-      const d=x-vals[i-1], p=vals[i-1]? d/Math.abs(vals[i-1])*100 : null;
-      txt = !d ? '<span class="zero">±0</span>' : `<span class="${d>0?"g-up":"g-down"}">${d>0?"+":"−"}${gFmt(Math.abs(d),money)}</span>`+(p!=null?`<span class="dp">${d>0?"+":"−"}${Math.abs(p).toLocaleString("de-DE",{maximumFractionDigits:0})} %</span>`:'<span class="dp">neu</span>');
-    }
-    else txt=gFmt(x,money);
-    h+=`<td class="num">${txt}</td>`;
-  });
-  if(C) h+=`<td class="num tot">${mode==="pct" ? (P.grand?(tot/P.grand*100).toLocaleString("de-DE",{maximumFractionDigits:1,minimumFractionDigits:1})+" %":"–") : gFmt(tot,money)}</td>`;
-  return h;
-}
-function gLabelCell(dim, key, clickable){
-  const n=gValNote(dim,key), lab=gEsc(gValLabel(dim,key));
-  return `<td${n?` title="${gEsc(n.title)}"`:""}>${clickable?`<span class="pv-lab" data-dim="${dim}" data-val="${gEsc(key)}">${lab}</span>`:lab}${n?`<span class="sub">${gEsc(n.sub)}</span>`:""}</td>`;
-}
-function renderPivot(rows){
-  const v=gView, P=gPivot(rows), mDef=GEMA_MEASURES.find(x=>x.k===v.measure), money=mDef.money, C=v.col;
-  const arrow=by=>v.sort.by===by?`<span class="srt">${v.sort.dir<0?" ↓":" ↑"}</span>`:"";
-  let h=`<thead><tr><th data-sort="label">${gEsc(GEMA_DIM[v.row].label)}${v.row2?" → "+gEsc(GEMA_DIM[v.row2].label):""}${arrow("label")}</th>`;
-  if(C){
-    P.colKeys.forEach((k,i)=>{ const n=gValNote(C,k); h+=`<th class="num" data-sort="${i}"${n?` title="${gEsc(n.title)}"`:""}>${gEsc(gValLabel(C,k))}${arrow(i)}${n?`<span class="sub">${gEsc(n.sub)}</span>`:""}</th>`; });
-    if(P.other) h+=`<th class="num" data-sort="${P.colKeys.length}">Übrige${arrow(P.colKeys.length)}</th>`;
-    h+=`<th class="num" data-sort="total">Summe${arrow("total")}</th>`;
-  } else h+=`<th class="num" data-sort="total">${gEsc(mDef.label)}${arrow("total")}</th>`;
-  h+="</tr></thead><tbody>";
-  const shown=P.groups.slice(0,gLimit);
-  shown.forEach(g=>{
-    h+=`<tr class="pv-g${g.subs.length?" has-sub":""}">${gLabelCell(v.row,g.key,true)}${gCells(g.vals,g.tot,P,money)}</tr>`;
-    g.subs.forEach(s=>{ h+=`<tr class="pv-s">${gLabelCell(v.row2,s.key,false)}${gCells(s.vals,s.tot,P,money)}</tr>`; });
-  });
-  if(!P.groups.length) h+=`<tr><td colspan="${P.nc+2}" class="zero">Keine Positionen für diese Auswahl.</td></tr>`;
-  h+=`</tbody><tfoot><tr><td>Summe</td>${gCells(P.colTot,P.grand,P,money)}</tr></tfoot>`;
-  const t=document.getElementById("pvTable"); t.innerHTML=h;
-  t.querySelectorAll("th[data-sort]").forEach(th=>th.onclick=()=>{
-    const by=th.dataset.sort==="label"||th.dataset.sort==="total"?th.dataset.sort:+th.dataset.sort;
-    v.sort = v.sort.by===by ? {by, dir:-v.sort.dir} : {by, dir:by==="label"?1:-1};
-    gSaveView(); renderPivot(gFiltered());
-  });
-  t.querySelectorAll(".pv-lab").forEach(el=>el.onclick=()=>gAddFilter(el.dataset.dim, el.dataset.val));
-  document.getElementById("pvInfo").textContent=`${P.groups.length.toLocaleString("de-DE")} Zeilen · ${rows.length.toLocaleString("de-DE")} Positionen · Summe ${money?gMoney(P.grand):Math.round(P.grand).toLocaleString("de-DE")}`;
-  const more=document.getElementById("pvMore");
-  more.style.display=P.groups.length>50?"":"none";
-  more.textContent=gLimit<P.groups.length?`Alle ${P.groups.length} anzeigen`:"Nur Top 50";
-  return P;
-}
-function gPivotCSV(){
-  const rows=gFiltered(), v=gView, P=gPivot(rows), C=v.col, mDef=GEMA_MEASURES.find(x=>x.k===v.measure);
-  const num=x=>mDef.money?(Math.round(x*10000)/10000).toString().replace(".",","):String(Math.round(x));
-  const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
-  const head=[GEMA_DIM[v.row].label].concat(v.row2?[GEMA_DIM[v.row2].label]:[]);
-  const colNames=C?P.colKeys.map(k=>gValLabel(C,k)).concat(P.other?["Übrige"]:[]).concat(["Summe"]):[mDef.label];
-  const lines=[head.concat(colNames).map(q).join(";")];
-  const line=(a,b,vals,tot)=>lines.push([q(a)].concat(v.row2?[q(b)]:[]).concat((C?vals.concat([tot]):[tot]).map(num)).join(";"));
-  P.groups.forEach(g=>{ line(gValLabel(v.row,g.key), v.row2?"(Summe)":"", g.vals, g.tot); g.subs.forEach(s=>line(gValLabel(v.row,g.key), gValLabel(v.row2,s.key), s.vals, s.tot)); });
-  line("Summe", "", P.colTot, P.grand);
-  const note=gView.filters.length?"Filter: "+gView.filters.map(f=>GEMA_DIM[f.dim].label+" = "+gValLabel(f.dim,f.val)).join(", "):"";
-  if(note) lines.push("", q(note));
-  const blob=new Blob(["﻿"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
-  const url=URL.createObjectURL(blob), a=document.createElement("a");
-  a.href=url; a.download="gema-pivot-"+new Date().toISOString().slice(0,10)+".csv"; a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),1000); toast("Pivot als CSV exportiert.",true);
-}
-
-/* ---- filters ---- */
-function gAddFilter(dim, val){
-  if(!GEMA_DIM[dim]) return;
-  gView.filters=gView.filters.filter(f=>f.dim!==dim); gView.filters.push({dim, val});
-  // drilling into the row dimension: show the next level instead of a single row
-  if(dim===gView.row){
-    const used=new Set(gView.filters.map(f=>f.dim).concat([gView.col]));
-    gView.row = gView.row2 && !used.has(gView.row2) ? gView.row2 : ["werk","sparte","lizenz","land","nquartal","produkt"].find(k=>!used.has(k)) || "werk";
-    gView.row2=""; if(typeof gView.sort.by==="number") gView.sort={by:"total",dir:-1};
-  }
-  gLimit=50; gSaveView(); renderGema();
-}
-function gRemoveFilter(i){ gView.filters.splice(i,1); gSaveView(); renderGema(); }
-function renderFilterUI(){
-  const chips=gView.filters.map((f,i)=>`<span class="f-chip"><span>${gEsc(GEMA_DIM[f.dim].label)}</span> <b>${gEsc(gValLabel(f.dim,f.val))}</b><button type="button" data-i="${i}" title="Filter entfernen">×</button></span>`).join("");
-  const box=document.getElementById("pvFilterChips"); box.innerHTML=chips||'<span class="zero" style="font-size:12.5px">keine</span>';
-  box.querySelectorAll("button").forEach(b=>b.onclick=()=>gRemoveFilter(+b.dataset.i));
-  const fd=document.getElementById("pvFDim");
-  if(!fd.options.length) fd.innerHTML=GEMA_DIMS.map(d=>`<option value="${d.k}">${gEsc(d.label)}</option>`).join("");
-  gFillFilterValues();
-}
-function gFillFilterValues(){
-  const dim=document.getElementById("pvFDim").value||"werk";
-  // offer values that exist under the other active filters
-  const fs=gView.filters.filter(f=>f.dim!==dim), rows=[];
-  gActiveSets().forEach(s=>gRows(s).forEach(r=>{ if(fs.every(f=>r[f.dim]===f.val)) rows.push(r); }));
-  const vals=gOrderVals(dim, rows, "gebucht");
-  document.getElementById("pvFVal").innerHTML=vals.map(x=>`<option value="${gEsc(x)}">${gEsc(gValLabel(dim,x))}</option>`).join("");
-}
-
 /* ---- overview ---- */
 function renderGemaKpis(rows){
   const act=gActiveSets(); const box=document.getElementById("gemaKpis");
@@ -2817,7 +2703,7 @@ function renderGemaChart(rows){
   const act=gActiveSets(), cv=document.getElementById("gemaChart");
   if(!window.Chart||!cv) return;
   if(document.getElementById("tab-gema").hidden) return;   // Chart.js needs a visible canvas; drawn on tab switch
-  const sp=gOrderVals("sparte", rows, "gebucht");
+  const sp=gemaPV.orderVals("sparte", rows, "gebucht");
   const ds=sp.map((s,i)=>({label:s, backgroundColor:PALETTE[i%PALETTE.length], borderRadius:4, maxBarThickness:70,
     data:act.map(set=>rows.reduce((a,r)=>a+(r.set===set.id&&r.sparte===s?r.m.gebucht:0),0))}));
   if(gemaChart) gemaChart.destroy();
@@ -2865,15 +2751,6 @@ function renderGemaGlossary(){
 }
 
 /* ---- main render ---- */
-function renderGemaControls(){
-  const opt=(sel,none)=>(none?`<option value="">— ${none} —</option>`:"")+GEMA_DIMS.map(d=>`<option value="${d.k}"${d.k===sel?" selected":""}>${gEsc(d.label)}</option>`).join("");
-  document.getElementById("pvRow").innerHTML=opt(gView.row);
-  document.getElementById("pvRow2").innerHTML=opt(gView.row2,"keine");
-  document.getElementById("pvCol").innerHTML=opt(gView.col,"keine");
-  document.getElementById("pvMeasure").innerHTML=GEMA_MEASURES.map(m=>`<option value="${m.k}"${m.k===gView.measure?" selected":""}>${gEsc(m.label)}</option>`).join("");
-  document.querySelectorAll("#pvMode button").forEach(b=>b.classList.toggle("on",b.dataset.mode===gView.mode));
-  const dBtn=document.querySelector('#pvMode button[data-mode="delta"]'); if(dBtn) dBtn.disabled=!gView.col;
-}
 function renderGemaChips(){
   document.getElementById("gemaChips").innerHTML=gemaSets.map((s,i)=>{
     const sum=gRows(s).reduce((a,r)=>a+r.m.gebucht,0), off=gView.hidden.includes(s.id);
@@ -2896,10 +2773,245 @@ function renderGema(){
   document.getElementById("gemaEmpty").classList.toggle("hidden",has);
   document.getElementById("gemaDash").style.display=has?"":"none";
   if(!has){ if(gemaChart){ gemaChart.destroy(); gemaChart=null; } return; }
-  renderGemaControls(); renderFilterUI();
-  const rows=gFiltered();
-  renderGemaKpis(rows); renderGemaChart(rows); renderPivot(rows); renderGemaRaw(rows);
+  const rows=gemaPV.filtered();
+  renderGemaKpis(rows); renderGemaChart(rows); gemaPV.render(rows); renderGemaRaw(rows);
 }
+
+/* ================= PIVOT ENGINE (shared by the GEMA and Stream analyzers) ================= */
+/* cfg: {p:id prefix, mount:element id, dims:[{k,label,order?}], measures:[{k,label,money?,ratio?:{num,den,scale}}], presets:[{label,v}],
+         view:()=>state object, save:()=>void, refresh:()=>void (re-render the whole tab), base:()=>rows of the active datasets,
+         label:(dim,v)=>display text, note:(dim,v)=>{sub,title}|null, drill:[dims tried after a row drill-down], csvName} */
+function pivotPanelHTML(p){
+  return `<div class="panel pv-panel">
+    <div class="pv-row" id="${p}Presets"><span class="ctrl-label">Vorlagen</span></div>
+    <div class="pv-row">
+      <span class="ctrl-label">Zeilen</span><select id="${p}Row"></select>
+      <span class="ctrl-label">dann</span><select id="${p}Row2"></select>
+      <span class="ctrl-label">Spalten</span><select id="${p}Col"></select>
+      <span class="ctrl-label">Wert</span><select id="${p}Measure"></select>
+    </div>
+    <div class="pv-row">
+      <span class="ctrl-label">Anzeige</span>
+      <div class="ctrl" id="${p}Mode">
+        <button data-mode="val" type="button">Werte</button>
+        <button data-mode="pct" type="button">% der Spalte</button>
+        <button data-mode="delta" type="button">Δ zur Vorspalte</button>
+      </div>
+    </div>
+    <div class="pv-row">
+      <span class="ctrl-label">Filter</span>
+      <span id="${p}FilterChips" style="display:contents"></span>
+      <select id="${p}FDim"></select><select id="${p}FVal"></select>
+      <button class="btn mini" id="${p}FAdd" type="button">+ Filter</button>
+    </div>
+    <div class="tbl-wrap"><table class="mtable pv-table" id="${p}Table"></table></div>
+    <div class="pv-foot">
+      <span class="info" id="${p}Info"></span>
+      <button class="btn mini" id="${p}More" type="button"></button>
+      <button class="btn mini" id="${p}Csv" type="button">CSV exportieren</button>
+    </div>
+  </div>`;
+}
+function makePivot(cfg){
+  const p=cfg.p, $=id=>document.getElementById(p+id);
+  const DIM=Object.fromEntries(cfg.dims.map(d=>[d.k,d]));
+  let limit=50;
+  document.getElementById(cfg.mount).innerHTML=pivotPanelHTML(p);
+  const V=()=>cfg.view();
+  const mDef=()=>cfg.measures.find(m=>m.k===V().measure)||cfg.measures[0];
+  const lab=(d,v)=>cfg.label?cfg.label(d,v):v;
+  const note=(d,v)=>cfg.note?cfg.note(d,v):null;
+
+  function sanitize(){
+    const v=V();
+    if(!DIM[v.row]) v.row=cfg.dims[0].k;
+    if(v.row2 && (!DIM[v.row2]||v.row2===v.row)) v.row2="";
+    if(v.col && !DIM[v.col]) v.col="";
+    if(!cfg.measures.some(m=>m.k===v.measure)) v.measure=cfg.measures[0].k;
+    if(!["val","pct","delta"].includes(v.mode)) v.mode="val";
+    if(!v.col && v.mode==="delta") v.mode="val";
+    v.filters=(Array.isArray(v.filters)?v.filters:[]).filter(f=>f&&DIM[f.dim]);
+    if(!v.sort||typeof v.sort!=="object") v.sort={by:"total",dir:-1};
+  }
+  function filtered(){ const fs=V().filters; return cfg.base().filter(r=>fs.every(f=>r[f.dim]===f.val)); }
+  function orderVals(dim, rows, mk){
+    const m=cfg.measures.find(x=>x.k===mk)||cfg.measures[0], key=m.ratio?m.ratio.num:m.k;
+    const tot=new Map(); rows.forEach(r=>tot.set(r[dim],(tot.get(r[dim])||0)+(r.m[key]||0)));
+    const keys=[...tot.keys()];
+    if(DIM[dim]&&DIM[dim].order==="asc") return keys.sort((a,b)=>String(a).localeCompare(String(b),"de",{numeric:true}));
+    return keys.sort((a,b)=>Math.abs(tot.get(b))-Math.abs(tot.get(a)) || String(a).localeCompare(String(b),"de"));
+  }
+  function sorter(dim){
+    const s=V().sort;
+    return (a,b)=>{
+      if(s.by==="label") return s.dir*String(lab(dim,a.key)).localeCompare(String(lab(dim,b.key)),"de",{numeric:true});
+      const A=s.by==="total"?a.tot:(a.vals[s.by]||0), B=s.by==="total"?b.tot:(b.vals[s.by]||0);
+      return s.dir*(A-B) || String(a.key).localeCompare(String(b.key),"de");
+    };
+  }
+  function compute(rows){
+    const v=V(), m=mDef(), C=v.col, R=m.ratio;
+    const num=R?R.num:m.k, den=R?R.den:null, sc=R?(R.scale||1):1;
+    let colKeys=C ? orderVals(C, rows, v.measure) : ["__all"], other=false;
+    if(C && colKeys.length>24){ colKeys=colKeys.slice(0,24); other=true; }
+    const ci=new Map(colKeys.map((c,i)=>[c,i])), nc=colKeys.length+(other?1:0);
+    const mk=key=>({key, vals:new Array(nc).fill(0), dens:new Array(nc).fill(0), tot:0, dtot:0});
+    const groups=new Map(), T=mk("__total");
+    const add=(o,c,x,d)=>{ o.vals[c]+=x; o.tot+=x; if(den){ o.dens[c]+=d; o.dtot+=d; } };
+    rows.forEach(r=>{
+      const x=r.m[num]||0, d=den?(r.m[den]||0):0, c=C ? (ci.has(r[C])?ci.get(r[C]):colKeys.length) : 0;
+      let g=groups.get(r[v.row]); if(!g){ g=mk(r[v.row]); g.subs=new Map(); groups.set(r[v.row],g); }
+      add(g,c,x,d);
+      if(v.row2){ let s=g.subs.get(r[v.row2]); if(!s){ s=mk(r[v.row2]); g.subs.set(r[v.row2],s); } add(s,c,x,d); }
+      add(T,c,x,d);
+    });
+    const fin=o=>{ if(den){ o.vals=o.vals.map((x,i)=>o.dens[i]?x/o.dens[i]*sc:0); o.tot=o.dtot?o.tot/o.dtot*sc:0; } return o; };
+    const list=[...groups.values()].map(g=>{ fin(g); g.subs=[...g.subs.values()].map(fin); return g; });
+    fin(T);
+    list.sort(sorter(v.row)); list.forEach(g=>g.subs.sort(sorter(v.row2)));
+    return {colKeys, other, groups:list, colTot:T.vals, grand:T.tot, nc};
+  }
+  function fmtCell(x, m){ if(m.ratio && !x) return '<span class="zero">–</span>'; return m.fmt ? m.fmt(x) : gFmt(x, m.money); }
+  function cells(vals, tot, P, m){
+    const v=V(), mode=m.ratio&&v.mode==="pct"?"val":v.mode, C=v.col; let h="";
+    vals.forEach((x,i)=>{
+      let txt;
+      if(mode==="pct") txt = P.colTot[i] ? (x/P.colTot[i]*100).toLocaleString("de-DE",{maximumFractionDigits:1,minimumFractionDigits:1})+" %" : '<span class="zero">–</span>';
+      else if(mode==="delta" && C && i>0 && !(P.other && i===P.nc-1)){
+        const d=x-vals[i-1], pc=vals[i-1]? d/Math.abs(vals[i-1])*100 : null;
+        txt = Math.abs(d)<((m.money||m.ratio)?0.0005:0.5) ? '<span class="zero">±0</span>' : `<span class="${d>0?"g-up":"g-down"}">${d>0?"+":"−"}${fmtCell(Math.abs(d),m)}</span>`+(pc!=null?`<span class="dp">${d>0?"+":"−"}${Math.abs(pc).toLocaleString("de-DE",{maximumFractionDigits:0})} %</span>`:'<span class="dp">neu</span>');
+      }
+      else txt=fmtCell(x,m);
+      h+=`<td class="num">${txt}</td>`;
+    });
+    if(C) h+=`<td class="num tot">${mode==="pct" ? (P.grand?(tot/P.grand*100).toLocaleString("de-DE",{maximumFractionDigits:1,minimumFractionDigits:1})+" %":"–") : fmtCell(tot,m)}</td>`;
+    return h;
+  }
+  function labelCell(dim, key, clickable){
+    const n=note(dim,key), l=gEsc(lab(dim,key));
+    return `<td${n&&n.title?` title="${gEsc(n.title)}"`:""}>${clickable?`<span class="pv-lab" data-dim="${dim}" data-val="${gEsc(key)}">${l}</span>`:l}${n&&n.sub?`<span class="sub">${gEsc(n.sub)}</span>`:""}</td>`;
+  }
+  function renderTable(rows){
+    const v=V(), P=compute(rows), m=mDef(), C=v.col;
+    const arrow=by=>v.sort.by===by?`<span class="srt">${v.sort.dir<0?" ↓":" ↑"}</span>`:"";
+    let h=`<thead><tr><th data-sort="label">${gEsc(DIM[v.row].label)}${v.row2?" → "+gEsc(DIM[v.row2].label):""}${arrow("label")}</th>`;
+    if(C){
+      P.colKeys.forEach((k,i)=>{ const n=note(C,k); h+=`<th class="num" data-sort="${i}"${n&&n.title?` title="${gEsc(n.title)}"`:""}>${gEsc(lab(C,k))}${arrow(i)}${n&&n.sub?`<span class="sub">${gEsc(n.sub)}</span>`:""}</th>`; });
+      if(P.other) h+=`<th class="num" data-sort="${P.colKeys.length}">Übrige${arrow(P.colKeys.length)}</th>`;
+      h+=`<th class="num" data-sort="total">${m.ratio?"Gesamt":"Summe"}${arrow("total")}</th>`;
+    } else h+=`<th class="num" data-sort="total">${gEsc(m.label)}${arrow("total")}</th>`;
+    h+="</tr></thead><tbody>";
+    P.groups.slice(0,limit).forEach(g=>{
+      h+=`<tr class="pv-g${g.subs.length?" has-sub":""}">${labelCell(v.row,g.key,true)}${cells(g.vals,g.tot,P,m)}</tr>`;
+      g.subs.forEach(s=>{ h+=`<tr class="pv-s">${labelCell(v.row2,s.key,false)}${cells(s.vals,s.tot,P,m)}</tr>`; });
+    });
+    if(!P.groups.length) h+=`<tr><td colspan="${P.nc+2}" class="zero">Keine Positionen für diese Auswahl.</td></tr>`;
+    h+=`</tbody><tfoot><tr><td>${m.ratio?"Gesamt":"Summe"}</td>${cells(P.colTot,P.grand,P,m)}</tr></tfoot>`;
+    const t=$("Table"); t.innerHTML=h;
+    t.querySelectorAll("th[data-sort]").forEach(th=>th.onclick=()=>{
+      const by=th.dataset.sort==="label"||th.dataset.sort==="total"?th.dataset.sort:+th.dataset.sort;
+      v.sort = v.sort.by===by ? {by, dir:-v.sort.dir} : {by, dir:by==="label"?1:-1};
+      cfg.save(); renderTable(filtered());
+    });
+    t.querySelectorAll(".pv-lab").forEach(el=>el.onclick=()=>addFilter(el.dataset.dim, el.dataset.val));
+    $("Info").textContent=`${P.groups.length.toLocaleString("de-DE")} Zeilen · ${rows.length.toLocaleString("de-DE")} Positionen · ${m.ratio?"Gesamt":"Summe"} ${fmtCell(P.grand,m).replace(/<[^>]+>/g,"").replace(/&lt;/g,"<").replace(/&gt;/g,">")}`;
+    const more=$("More");
+    more.style.display=P.groups.length>50?"":"none";
+    more.textContent=limit<P.groups.length?`Alle ${P.groups.length} anzeigen`:"Nur Top 50";
+  }
+  function exportCSV(){
+    const rows=filtered(), v=V(), P=compute(rows), C=v.col, m=mDef();
+    const num=x=>(m.money||m.ratio)?(Math.round(x*10000)/10000).toString().replace(".",","):String(Math.round(x));
+    const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+    const head=[DIM[v.row].label].concat(v.row2?[DIM[v.row2].label]:[]);
+    const colNames=C?P.colKeys.map(k=>lab(C,k)).concat(P.other?["Übrige"]:[]).concat([m.ratio?"Gesamt":"Summe"]):[m.label];
+    const lines=[head.concat(colNames).map(q).join(";")];
+    const line=(a,b,vals,tot)=>lines.push([q(a)].concat(v.row2?[q(b)]:[]).concat((C?vals.concat([tot]):[tot]).map(num)).join(";"));
+    P.groups.forEach(g=>{ line(lab(v.row,g.key), v.row2?"(Summe)":"", g.vals, g.tot); g.subs.forEach(s=>line(lab(v.row,g.key), lab(v.row2,s.key), s.vals, s.tot)); });
+    line(m.ratio?"Gesamt":"Summe", "", P.colTot, P.grand);
+    lines.push("", q("Wert: "+m.label));
+    if(v.filters.length) lines.push(q("Filter: "+v.filters.map(f=>DIM[f.dim].label+" = "+lab(f.dim,f.val)).join(", ")));
+    const blob=new Blob(["﻿"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
+    const url=URL.createObjectURL(blob), a=document.createElement("a");
+    a.href=url; a.download=cfg.csvName+"-"+new Date().toISOString().slice(0,10)+".csv"; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000); toast("Pivot als CSV exportiert.",true);
+  }
+  function addFilter(dim, val){
+    const v=V(); if(!DIM[dim]) return;
+    v.filters=v.filters.filter(f=>f.dim!==dim); v.filters.push({dim, val});
+    // drilling into the row dimension: show the next level instead of a single row
+    if(dim===v.row){
+      const used=new Set(v.filters.map(f=>f.dim).concat([v.col]));
+      v.row = v.row2 && !used.has(v.row2) ? v.row2 : cfg.drill.find(k=>!used.has(k)) || cfg.dims[0].k;
+      v.row2=""; if(typeof v.sort.by==="number") v.sort={by:"total",dir:-1};
+    }
+    limit=50; cfg.save(); cfg.refresh();
+  }
+  function fillFilterValues(){
+    const dim=$("FDim").value||cfg.dims[0].k;
+    const fs=V().filters.filter(f=>f.dim!==dim);   // offer values that exist under the other active filters
+    const vals=orderVals(dim, cfg.base().filter(r=>fs.every(f=>r[f.dim]===f.val)), V().measure);
+    $("FVal").innerHTML=vals.map(x=>`<option value="${gEsc(x)}">${gEsc(lab(dim,x))}</option>`).join("");
+  }
+  function renderControls(){
+    const v=V(), m=mDef();
+    const opt=(sel,none)=>(none?`<option value="">— ${none} —</option>`:"")+cfg.dims.map(d=>`<option value="${d.k}"${d.k===sel?" selected":""}>${gEsc(d.label)}</option>`).join("");
+    $("Row").innerHTML=opt(v.row); $("Row2").innerHTML=opt(v.row2,"keine"); $("Col").innerHTML=opt(v.col,"keine");
+    $("Measure").innerHTML=cfg.measures.map(x=>`<option value="${x.k}"${x.k===v.measure?" selected":""}>${gEsc(x.label)}</option>`).join("");
+    document.querySelectorAll(`#${p}Mode button`).forEach(b=>{ b.classList.toggle("on",b.dataset.mode===v.mode);
+      b.disabled = (b.dataset.mode==="delta"&&!v.col) || (b.dataset.mode==="pct"&&!!m.ratio); });
+    const box=$("FilterChips");
+    box.innerHTML=v.filters.map((f,i)=>`<span class="f-chip"><span>${gEsc(DIM[f.dim].label)}</span> <b>${gEsc(lab(f.dim,f.val))}</b><button type="button" data-i="${i}" title="Filter entfernen">×</button></span>`).join("")||'<span class="zero" style="font-size:12.5px">keine</span>';
+    box.querySelectorAll("button").forEach(b=>b.onclick=()=>{ v.filters.splice(+b.dataset.i,1); cfg.save(); cfg.refresh(); });
+    if(!$("FDim").options.length) $("FDim").innerHTML=cfg.dims.map(d=>`<option value="${d.k}">${gEsc(d.label)}</option>`).join("");
+    fillFilterValues();
+  }
+  // wiring
+  const setV=(k,val)=>{ const v=V(); v[k]=val; if(k==="row"&&v.row2===val) v.row2="";
+    if(k!=="measure"&&k!=="mode"&&typeof v.sort.by==="number") v.sort={by:"total",dir:-1};
+    sanitize(); limit=50; cfg.save(); cfg.refresh(); };
+  $("Row").onchange=e=>setV("row",e.target.value);
+  $("Row2").onchange=e=>setV("row2",e.target.value);
+  $("Col").onchange=e=>setV("col",e.target.value);
+  $("Measure").onchange=e=>setV("measure",e.target.value);
+  document.querySelectorAll(`#${p}Mode button`).forEach(b=>b.onclick=()=>setV("mode",b.dataset.mode));
+  $("FDim").onchange=fillFilterValues;
+  $("FAdd").onclick=()=>{ if($("FVal").options.length) addFilter($("FDim").value, $("FVal").value); };
+  $("More").onclick=()=>{ limit=limit===50?Infinity:50; renderTable(filtered()); };
+  $("Csv").onclick=exportCSV;
+  cfg.presets.forEach(pr=>{ const b=document.createElement("button"); b.className="btn mini"; b.type="button"; b.textContent=pr.label;
+    b.onclick=()=>{ Object.assign(V(),{mode:"val", row2:"", sort:{by:"total",dir:-1}}, JSON.parse(JSON.stringify(pr.v))); sanitize(); limit=50; cfg.save(); cfg.refresh(); };
+    $("Presets").appendChild(b); });
+  return {sanitize, filtered, orderVals, addFilter,
+    render(rows){ sanitize(); renderControls(); renderTable(rows); }};
+}
+
+/* column-wise storage codec: strings dictionary-encoded, numeric fields as rounded number arrays */
+function colEncode(rows, fields, numFields){
+  const cols={}, nums=new Set(numFields||[]);
+  fields.forEach(f=>{
+    if(nums.has(f)){ cols[f]={x:rows.map(r=>{ const v=+r[f]; return isFinite(v)?Math.round(v*1e9)/1e9:0; })}; return; }
+    const dict=[], pos=new Map(), idx=new Array(rows.length);
+    rows.forEach((r,i)=>{ const v=r[f]==null?"":String(r[f]); let p=pos.get(v); if(p===undefined){ p=dict.length; dict.push(v); pos.set(v,p); } idx[i]=p; });
+    if(dict.length<=1) cols[f]={d:dict};
+    else { const w=(dict.length-1).toString(36).length; cols[f]={d:dict, w, i:idx.map(p=>p.toString(36).padStart(w,"0")).join("")}; }
+  });
+  return {n:rows.length, cols};
+}
+function colDecode(enc){
+  const n=+enc.n||0, rows=Array.from({length:n},()=>({}));
+  Object.keys(enc.cols||{}).forEach(f=>{ const c=enc.cols[f];
+    if(c.x){ for(let k=0;k<n;k++) rows[k][f]=+c.x[k]||0; return; }
+    if(!c.i){ const v=(c.d&&c.d[0])||""; rows.forEach(r=>r[f]=v); return; }
+    for(let k=0;k<n;k++) rows[k][f]=c.d[parseInt(c.i.substr(k*c.w,c.w),36)]||"";
+  });
+  return rows;
+}
+
+const gemaPV=makePivot({p:"pv", mount:"pvMount", dims:GEMA_DIMS, measures:GEMA_MEASURES, presets:GEMA_PRESETS,
+  view:()=>gView, save:()=>gSaveView(), refresh:()=>renderGema(), csvName:"gema-pivot",
+  base:()=>{ const out=[]; gActiveSets().forEach(s=>gRows(s).forEach(r=>out.push(r))); return out; },
+  label:gValLabel, note:gValNote, drill:["werk","sparte","lizenz","land","nquartal","produkt"]});
 
 /* ---- wiring ---- */
 (function(){
@@ -2910,26 +3022,447 @@ function renderGema(){
   ["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("drag");}));
   dz.addEventListener("drop",e=>handleGemaFiles(e.dataTransfer.files));
   document.getElementById("gemaClearBtn").onclick=clearGema;
-  const setV=(k,val)=>{ gView[k]=val; if(k==="row"&&gView.row2===val) gView.row2=""; if(k==="col"&&!val&&gView.mode==="delta") gView.mode="val";
-    if(k!=="measure"&&k!=="mode"&&typeof gView.sort.by==="number") gView.sort={by:"total",dir:-1};
-    gLimit=50; gSaveView(); renderGema(); };
-  document.getElementById("pvRow").onchange=e=>setV("row",e.target.value);
-  document.getElementById("pvRow2").onchange=e=>setV("row2",e.target.value);
-  document.getElementById("pvCol").onchange=e=>setV("col",e.target.value);
-  document.getElementById("pvMeasure").onchange=e=>setV("measure",e.target.value);
-  document.querySelectorAll("#pvMode button").forEach(b=>b.onclick=()=>setV("mode",b.dataset.mode));
-  document.getElementById("pvFDim").onchange=gFillFilterValues;
-  document.getElementById("pvFAdd").onclick=()=>{ const d=document.getElementById("pvFDim").value, val=document.getElementById("pvFVal").value;
-    if(d && document.getElementById("pvFVal").options.length) gAddFilter(d,val); };
-  document.getElementById("pvMore").onclick=()=>{ gLimit=gLimit===50?Infinity:50; renderPivot(gFiltered()); };
-  document.getElementById("pvCsv").onclick=gPivotCSV;
-  document.getElementById("gemaRawMore").onclick=()=>{ gRawLimit+=100; renderGemaRaw(gFiltered()); };
-  const pr=document.getElementById("pvPresets");
-  GEMA_PRESETS.forEach(p=>{ const b=document.createElement("button"); b.className="btn mini"; b.type="button"; b.textContent=p.label;
-    b.onclick=()=>{ Object.assign(gView,{mode:"val", sort:{by:"total",dir:-1}}, JSON.parse(JSON.stringify(p.v))); gLimit=50; gSaveView(); renderGema(); };
-    pr.appendChild(b); });
+  document.getElementById("gemaRawMore").onclick=()=>{ gRawLimit+=100; renderGemaRaw(gemaPV.filtered()); };
 })();
 gemaLoad();
+
+/* ================= STREAM ANALYZER (label sales reports) ================= */
+/* Label / distributor sales reports (XLSX or CSV, often many thousand lines). Each imported file is one
+   statement; data lives in IndexedDB (localStorage is too small for this volume) and goes into the backup. */
+const ST_IDB_KEY="streams.v1", ST_VIEW_KEY="singleAnalytics.streams.view";
+const ST_FIELDS={   // canonical field -> accepted headers (normalised: lower-case, only a-z0-9)
+  period:["period","salesperiod","reportingperiod","statementperiod","salesmonth","month"],
+  custno:["customerno","customernumber","accountno","accountnumber","clientno"],
+  name:["name","accountname","customername","clientname"],
+  contract:["contract","contractno","contractid","dealid"],
+  clearing:["clearingcode"],
+  isrc:["productid","isrc"],
+  ean:["eanupc","upc","ean","barcode"],
+  artist:["artist","artistname","releaseartist","trackartist"],
+  title:["title","releasetitle","release","album","albumtitle"],
+  track:["tracktitle","track","trackname","songtitle"],
+  retailer:["retailer","store","dsp","shop","platform","service","partner"],
+  type:["type","salestype","usagetype","transactiontype","saletype"],
+  territory:["territory","country","countrycode","salescountry"],
+  income:["incomeprice","income","grossrevenue","grossincome","gross"],
+  share:["share","sharepercent"],
+  rate:["royaltyrate","royaltyratepercent","rate"],
+  qty:["quantity","units","qty","streams","count"],
+  net:["netrevenue","net","netamount","netroyalty","royalty","royaltyamount","payable","earnings","amounteur","amount"]
+};
+const ST_NUM=["income","share","rate","qty","net"];
+const ST_TYPES={
+  "stream":{name:"Stream", text:"Abruf eines Titels bei einem Streamingdienst (Spotify, Apple Music, Deezer, YouTube …). <i>Menge</i> = Anzahl der Streams."},
+  "download":{name:"Download", text:"Kauf eines Titels als Datei (iTunes, Beatport, Qobuz …). <i>Menge</i> = verkaufte Downloads. Pro Einheit deutlich mehr wert als ein Stream."},
+  "creation":{name:"Creation", text:"Nutzung des Titels in <b>nutzergenerierten Inhalten</b>, z. B. als Sound in Instagram-Reels, TikToks oder Snapchat-Videos. <i>Menge</i> = gemeldete Nutzungen der Plattform."},
+  "platform promotion":{name:"Platform Promotion", text:"<b>Abzug</b> für ein Promotion-Programm der Plattform — deshalb negativ. In deinen Daten nur bei Spotify, mit Stream-Mengen: Das passt zu <b>Spotify Discovery Mode</b>, bei dem für bessere Platzierung in Radio/Autoplay eine niedrigere Vergütung auf die geförderten Streams akzeptiert wird (aus den Daten abgeleitet — im Zweifel beim Label nachfragen)."}
+};
+const ST_GROUPS=[[/spotify/i,"Spotify"],[/apple|itunes/i,"Apple"],[/youtube/i,"YouTube"],[/facebook|instagram|meta/i,"Meta (Facebook/Instagram)"],
+  [/tiktok|douyin/i,"TikTok"],[/amazon/i,"Amazon"],[/deezer/i,"Deezer"],[/tidal/i,"Tidal"],[/beatport/i,"Beatport"],[/soundcloud/i,"SoundCloud"],
+  [/qobuz/i,"Qobuz"],[/snapchat/i,"Snapchat"]];
+const ST_DIMS=[
+  {k:"period", label:"Abrechnungsperiode", order:"asc"},
+  {k:"stmt", label:"Abrechnung", order:"asc"},
+  {k:"label", label:"Label"},
+  {k:"release", label:"Release"},
+  {k:"title", label:"Titel"},
+  {k:"isrc", label:"Version (ISRC)"},
+  {k:"artist", label:"Artists"},
+  {k:"contract", label:"Vertrag / Rate"},
+  {k:"rgroup", label:"Plattform-Gruppe"},
+  {k:"retailer", label:"Plattform"},
+  {k:"type", label:"Nutzungsart"},
+  {k:"land", label:"Land"},
+  {k:"rate", label:"Royalty-Rate"}
+];
+const ST_MEASURES=[
+  {k:"net", label:"Netto-Erlös (€)", money:true},
+  {k:"income", label:"Income beim Label (€)", money:true},
+  {k:"kept", label:"Einbehalt Label (€)", money:true},
+  {k:"streams", label:"Streams", money:false},
+  {k:"qty", label:"Menge (alle Nutzungsarten)", money:false},
+  {k:"per1000", label:"Netto je 1.000 Streams (€)", ratio:{num:"netStreams", den:"streams", scale:1000},
+    fmt:x=>x.toLocaleString("de-DE",{minimumFractionDigits:3,maximumFractionDigits:3})+" €"},
+  {k:"n", label:"Anzahl Positionen", money:false}
+];
+const ST_PRESETS=[
+  {label:"Titel × Plattform", v:{row:"title", col:"rgroup", measure:"net"}},
+  {label:"Plattform → Nutzungsart", v:{row:"retailer", row2:"type", col:"", measure:"net"}},
+  {label:"Länder × Titel", v:{row:"land", col:"title", measure:"net"}},
+  {label:"Ø € je 1.000 Streams", v:{row:"rgroup", col:"title", measure:"per1000"}},
+  {label:"Titel × Periode", v:{row:"title", col:"period", measure:"net", mode:"delta"}},
+  {label:"Vertrag → Version", v:{row:"contract", row2:"isrc", col:"type", measure:"net"}}
+];
+const ST_VIEW_DEFAULT={row:"title", row2:"", col:"rgroup", measure:"net", mode:"val", filters:[], hidden:[], sort:{by:"total", dir:-1}};
+
+let stSets=[];   // {id, file, label, importedAt, declaredTotal, currency, raw:[canonical rows], _rows}
+let stView=JSON.parse(JSON.stringify(ST_VIEW_DEFAULT));
+let stChart=null, stRawLimit=25, stRecon="", stPersist="pending";   // pending | ok | fail
+
+/* ---- tiny IndexedDB key/value store ---- */
+const IDB={ _db:null,
+  open(){ if(this._db) return Promise.resolve(this._db);
+    return new Promise((res,rej)=>{ let q; try{ q=indexedDB.open("singleAnalytics",1); }catch(e){ rej(e); return; }
+      q.onupgradeneeded=()=>{ if(!q.result.objectStoreNames.contains("kv")) q.result.createObjectStore("kv"); };
+      q.onsuccess=()=>{ this._db=q.result; res(q.result); }; q.onerror=()=>rej(q.error); }); },
+  async get(k){ const db=await this.open(); return new Promise((res,rej)=>{ const q=db.transaction("kv").objectStore("kv").get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); },
+  async set(k,v){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction("kv","readwrite"); t.objectStore("kv").put(v,k); t.oncomplete=()=>res(); t.onerror=t.onabort=()=>rej(t.error); }); },
+  async del(k){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction("kv","readwrite"); t.objectStore("kv").delete(k); t.oncomplete=()=>res(); t.onerror=t.onabort=()=>rej(t.error); }); }
+};
+
+/* ---- helpers ---- */
+function sNum(v){
+  if(typeof v==="number") return isFinite(v)?v:0;
+  let s=String(v==null?"":v).replace(/[\s€$£%]/g,""); if(!s) return 0;
+  const c=s.lastIndexOf(","), d=s.lastIndexOf(".");
+  if(c>-1 && d>-1) s = c>d ? s.replace(/\./g,"").replace(",",".") : s.replace(/,/g,"");
+  else if(c>-1) s=s.replace(",",".");
+  const n=parseFloat(s); return isFinite(n)?n:0;
+}
+function sPct(x){ return (+x||0).toLocaleString("de-DE",{maximumFractionDigits:2})+" %"; }
+function sMonth(p){ const m=/^(\d{4})-(\d{2})$/.exec(p||""); if(!m) return p;
+  return new Date(Date.UTC(+m[1],+m[2]-1,1)).toLocaleDateString("de-DE",{month:"short",year:"numeric",timeZone:"UTC"}); }
+function sPer(p){ return p ? "Periode "+p : "ohne Periode"; }   // label period codes are statement periods, not usage months
+function stGroup(r){ r=r||""; for(const [re,g] of ST_GROUPS) if(re.test(r)) return g; return r?"Andere":"(unbekannt)"; }
+function stLand(c){ c=String(c||"").trim().toUpperCase(); if(!c) return "(unbekannt)";
+  if(c==="WW") return "Weltweit (WW)"; const n=gLand(c==="UK"?"GB":c); return c==="UK"?n.replace("(GB)","(UK)"):n; }
+function stTypeInfo(t){ return ST_TYPES[String(t||"").trim().toLowerCase()]||null; }
+function stPeriods(set){ return [...new Set(set.raw.map(r=>r.period).filter(Boolean))].sort(); }
+function stPeriodSpan(set){ const p=stPeriods(set); if(!p.length) return "ohne Periode"; return p.length===1?sPer(p[0]):sPer(p[0])+" – "+p[p.length-1]; }
+function stTail(set){ const t=set.id.replace(/^.*?_(EUR|USD|GBP|CHF)_/i,""); return t!==set.id ? t.replace(/_/g," ") : ""; }
+function stName(set){ return [set.label, stPeriodSpan(set), stTail(set)].filter(Boolean).join(" · "); }
+function stSum(set, k){ return stRows(set).reduce((a,r)=>a+r.m[k],0); }
+
+/* ---- storage ---- */
+function stSerialize(){ return {v:1, sets:stSets.map(s=>({id:s.id, file:s.file, label:s.label||"", importedAt:s.importedAt, declaredTotal:s.declaredTotal, currency:s.currency,
+  data:colEncode(s.raw, Object.keys(ST_FIELDS), ST_NUM)}))}; }
+function stLoadFrom(st){
+  stSets=[];
+  ((st&&st.sets)||[]).forEach(s=>{ try{ if(s&&s.id&&s.data) stSets.push({id:s.id, file:s.file||s.id, label:s.label||"", importedAt:s.importedAt||null,
+    declaredTotal:(s.declaredTotal==null?null:+s.declaredTotal), currency:s.currency||"EUR", raw:colDecode(s.data)}); }catch(e){} });
+}
+async function stSave(){
+  try{ if(stSets.length) await IDB.set(ST_IDB_KEY, stSerialize()); else await IDB.del(ST_IDB_KEY); stPersist="ok"; }
+  catch(e){ stPersist="fail"; toast("Label-Abrechnungen konnten nicht gespeichert werden — bitte Backup herunterladen."); }
+  renderStHint();
+}
+async function stLoad(){
+  try{ const v=JSON.parse(localStorage.getItem(ST_VIEW_KEY)||"null"); if(v&&typeof v==="object") stView=Object.assign(JSON.parse(JSON.stringify(ST_VIEW_DEFAULT)), v); }catch(e){}
+  try{ const st=await IDB.get(ST_IDB_KEY); if(st) stLoadFrom(st); stPersist="ok"; }catch(e){ stPersist="fail"; }
+  renderStreams();
+}
+function stSaveView(){ try{ localStorage.setItem(ST_VIEW_KEY, JSON.stringify(stView)); }catch(e){} }
+
+/* ---- import ---- */
+let xlsxLoading=null;
+function loadXLSX(){
+  if(window.XLSX) return Promise.resolve();
+  if(!xlsxLoading) xlsxLoading=new Promise((res,rej)=>{
+    const urls=["https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js","https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"];
+    const next=i=>{ if(i>=urls.length){ xlsxLoading=null; rej(new Error("Excel-Leser konnte nicht geladen werden — Internetverbindung prüfen")); return; }
+      const sc=document.createElement("script"); sc.src=urls[i]; sc.onload=()=>window.XLSX?res():next(i+1); sc.onerror=()=>{ sc.remove(); next(i+1); }; document.head.appendChild(sc); };
+    next(0); });
+  return xlsxLoading;
+}
+function stParseTable(aoa){
+  let hi=-1, map=null;
+  for(let i=0;i<Math.min(aoa.length,30);i++){
+    const head=(aoa[i]||[]).map(gNormHead), m={};
+    Object.keys(ST_FIELDS).forEach(f=>{ const j=head.findIndex(h=>ST_FIELDS[f].includes(h)); if(j>=0) m[f]=j; });
+    if(m.net!=null && (m.title!=null||m.track!=null||m.isrc!=null)){ hi=i; map=m; break; }
+  }
+  if(hi<0) return null;
+  const rows=[]; let declaredTotal=null;
+  for(let i=hi+1;i<aoa.length;i++){
+    const line=aoa[i]||[]; if(!line.some(c=>c!==""&&c!=null)) continue;
+    const g=f=>map[f]==null?"":line[map[f]];
+    const key=[g("period"),g("title"),g("track"),g("isrc"),g("retailer")].map(x=>String(x==null?"":x).trim()).join("");
+    if(!key){ if(line.some(c=>/^\s*(grand\s*)?total/i.test(String(c)))) declaredTotal=sNum(g("net")); continue; }   // "Total:" footer row
+    const r={};
+    Object.keys(ST_FIELDS).forEach(f=>{ r[f]= ST_NUM.includes(f) ? sNum(g(f)) : String(g(f)==null?"":g(f)).trim(); });
+    if(map.share==null) r.share=100;
+    rows.push(r);
+  }
+  return {rows, declaredTotal, hasIncome:map.income!=null, hasRate:map.rate!=null};
+}
+async function stReadFile(f){
+  const buf=await f.arrayBuffer();
+  if(/\.xlsx?$/i.test(f.name)){
+    await loadXLSX();
+    const wb=XLSX.read(new Uint8Array(buf),{type:"array"});
+    for(const sn of wb.SheetNames){
+      const res=stParseTable(XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1, raw:true, defval:""}));
+      if(res&&res.rows.length) return res;
+    }
+    throw new Error("keine Tabelle mit Titel- und Netto-Spalte gefunden");
+  }
+  const text=gDecodeText(buf).replace(/^﻿/,"");
+  const res=stParseTable(Papa.parse(text,{skipEmptyLines:true}).data);
+  if(!res||!res.rows.length) throw new Error("keine Tabelle mit Titel- und Netto-Spalte gefunden");
+  return res;
+}
+async function handleStreamFiles(files){
+  const arr=[...files].filter(f=>/\.(xlsx|xls|csv)$/i.test(f.name));
+  if(!arr.length){ toast("Keine Excel- oder CSV-Datei erkannt."); return; }
+  let changed=false;
+  for(const f of arr){
+    try{
+      const res=await stReadFile(f);
+      const id=f.name.replace(/\.(xlsx|xls|csv)$/i,"").replace(/\s*\(\d+\)$/,"").trim();
+      const cur=(/_(EUR|USD|GBP|CHF)_/i.exec(id)||[,"EUR"])[1].toUpperCase();
+      let set=stSets.find(s=>s.id===id);
+      if(set){ Object.assign(set,{file:f.name, raw:res.rows, declaredTotal:res.declaredTotal, currency:cur, importedAt:new Date().toISOString(), _rows:null}); toast(stName(set)+" aktualisiert: "+res.rows.length.toLocaleString("de-DE")+" Positionen",true); }
+      else { set={id, file:f.name, label:"", importedAt:new Date().toISOString(), declaredTotal:res.declaredTotal, currency:cur, raw:res.rows}; stSets.push(set);
+        toast(stName(set)+" importiert: "+res.rows.length.toLocaleString("de-DE")+" Positionen",true); }
+      if(cur!=="EUR") toast("Hinweis: Währung "+cur+" — Beträge werden ohne Umrechnung angezeigt.");
+      stRecon=set.id; changed=true;
+    }catch(e){ toast(f.name+": "+e.message); }
+  }
+  if(changed){ renderStreams(); await stSave(); }
+}
+function removeStSet(id){
+  const s=stSets.find(x=>x.id===id); if(!s) return;
+  if(!confirm("Abrechnung „"+stName(s)+"“ ("+s.raw.length+" Positionen) löschen?")) return;
+  stSets=stSets.filter(x=>x.id!==id); stView.hidden=stView.hidden.filter(x=>x!==id);
+  stSaveView(); renderStreams(); stSave(); toast("Abrechnung gelöscht.",true);
+}
+function clearStreams(){
+  if(!stSets.length) return;
+  if(!confirm("Alle gespeicherten Label-Abrechnungen löschen?")) return;
+  stSets=[]; stView.filters=[]; stView.hidden=[]; stSaveView(); renderStreams(); stSave(); toast("Label-Abrechnungen gelöscht.",true);
+}
+
+/* ---- derived rows ---- */
+function stDerive(r, set){
+  const stream=/stream/i.test(r.type);
+  return {stmt:set.id, period:r.period||"(ohne)", label:set.label||"(ohne Label)",
+    release:r.title||r.track||"(ohne Titel)", title:r.track||r.title||"(ohne Titel)", isrc:r.isrc||"(ohne)", artist:r.artist||"(ohne)",
+    contract:r.contract!==""?"Vertrag "+r.contract+(r.rate?" · "+sPct(r.rate):""):(r.rate?"Rate "+sPct(r.rate):"(ohne)"),
+    rgroup:stGroup(r.retailer), retailer:r.retailer||"(unbekannt)", type:r.type||"(ohne)", land:stLand(r.territory),
+    rate:r.rate?sPct(r.rate):"(ohne)", raw:r,
+    m:{net:r.net, income:r.income, kept:r.income-r.net, qty:r.qty, streams:stream?r.qty:0, netStreams:stream?r.net:0, n:1}};
+}
+function stRows(set){ if(!set._rows) set._rows=set.raw.map(r=>stDerive(r,set)); return set._rows; }
+function stActive(){ return stSets.filter(s=>!stView.hidden.includes(s.id)); }
+function stLabel(dim, v){
+  if(dim==="stmt"){ const s=stSets.find(x=>x.id===v); return s?stName(s):v; }
+  if(dim==="period") return sPer(v);
+  return v;
+}
+let stIsrcTitles=new Map();
+function stNote(dim, v){
+  if(dim==="type"){ const i=stTypeInfo(v); return i?{sub:"", title:i.text.replace(/<[^>]+>/g,"")}:null; }
+  if(dim==="isrc"){ const t=stIsrcTitles.get(v); return t?{sub:t}:null; }
+  if(dim==="rgroup"&&v==="Andere") return {sub:"", title:"Plattformen ohne eigene Gruppe — Details mit Zeilen „Plattform“"};
+  return null;
+}
+
+/* ---- overview ---- */
+function stStats(rows){
+  const s={net:0,income:0,streams:0,netStreams:0,n:rows.length}; const t=new Set(), p=new Set(), l=new Set();
+  rows.forEach(r=>{ s.net+=r.m.net; s.income+=r.m.income; s.streams+=r.m.streams; s.netStreams+=r.m.netStreams; t.add(r.title); p.add(r.retailer); l.add(r.land); });
+  s.per1000=s.streams?s.netStreams/s.streams*1000:0; s.titles=t.size; s.plat=p.size; s.land=l.size; return s;
+}
+function renderStKpis(rows){
+  const box=document.getElementById("stKpis");
+  const periods=[...new Set(rows.map(r=>r.period))].sort();
+  if(!periods.length){ box.innerHTML=""; return; }
+  const last=periods[periods.length-1], prev=periods.length>1?periods[periods.length-2]:null;
+  const A=stStats(rows.filter(r=>r.period===last)), B=prev?stStats(rows.filter(r=>r.period===prev)):null;
+  const d=(k,f)=>{ if(!B) return "&nbsp;"; const x=A[k]-B[k]; if(Math.abs(x)<(k==="streams"?0.5:0.0005)) return "± 0 vs. "+gEsc(sPer(prev));
+    const pc=B[k]?` (${x>0?"+":"−"}${Math.abs(x/B[k]*100).toLocaleString("de-DE",{maximumFractionDigits:0})} %)`:"";
+    return `<span class="${x>0?"g-up":"g-down"}">${x>0?"+":"−"}${f(Math.abs(x))}${pc}</span> vs. ${gEsc(sPer(prev))}`; };
+  const int=x=>Math.round(x).toLocaleString("de-DE"), eur3=x=>x.toLocaleString("de-DE",{minimumFractionDigits:3,maximumFractionDigits:3})+" €";
+  const k=(lab,val,dl)=>`<div class="panel g-kpi"><div class="k">${lab}</div><div class="v">${val}</div><div class="d">${dl}</div></div>`;
+  box.innerHTML=
+    k("Netto · "+gEsc(sPer(last)), gMoney(A.net), d("net",gMoney))+
+    k("Income beim Label", gMoney(A.income), d("income",gMoney))+
+    k("Streams", int(A.streams), d("streams",int))+
+    k("Netto je 1.000 Streams", eur3(A.per1000), d("per1000",eur3))+
+    k("Titel · Plattformen · Länder", A.titles+" · "+A.plat+" · "+A.land, B?`vorher ${B.titles} · ${B.plat} · ${B.land}`:"&nbsp;");
+}
+function renderStChart(rows){
+  const cv=document.getElementById("stChart");
+  if(!window.Chart||!cv||document.getElementById("tab-streams").hidden) return;   // drawn when the tab is visible
+  const periods=[...new Set(rows.map(r=>r.period))].sort(), groups=stPV.orderVals("rgroup", rows, "net");
+  const sum=new Map(); rows.forEach(r=>{ const k=r.period+"|"+r.rgroup; sum.set(k,(sum.get(k)||0)+r.m.net); });
+  const ds=groups.map((g,i)=>({label:g, backgroundColor:PALETTE[i%PALETTE.length], borderRadius:4, maxBarThickness:70, data:periods.map(p=>sum.get(p+"|"+g)||0)}));
+  if(stChart) stChart.destroy();
+  stChart=new Chart(cv,{type:"bar",data:{labels:periods.map(sPer),datasets:ds},options:{
+    responsive:true,maintainAspectRatio:false,animation:{duration:350},
+    scales:{x:{stacked:true,grid:{display:false},border:{color:"#252B39"},ticks:{font:{size:11}}},
+      y:{stacked:true,grid:{color:"rgba(37,43,57,.55)"},border:{display:false},ticks:{font:{size:11},callback:v=>v.toLocaleString("de-DE")+" €"}}},
+    plugins:{legend:{position:"bottom",labels:{boxWidth:10,boxHeight:10,color:"#8B94A8",font:{size:11}}},
+      tooltip:{backgroundColor:"#1A1E2A",borderColor:"#252B39",borderWidth:1,titleColor:"#E8EBF2",bodyColor:"#E8EBF2",padding:12,cornerRadius:8,
+        callbacks:{label:i=>"  "+i.dataset.label+":  "+gMoney(i.parsed.y), footer:i=>"Summe: "+gMoney(i.reduce((a,x)=>a+x.parsed.y,0))}}}
+  }});
+}
+
+/* ---- reconciliation: how the statement amount comes about ---- */
+function stAnalyticsMonthly(title){
+  if(typeof singles==="undefined") return null;
+  const i=findExisting(title); if(i<0) return null;
+  const sg=singles[i], rel=parseDate(sg.release), m=new Map();
+  sg.series.forEach(p=>{ const k=isoFromTs(rel+(p.day-1)*DAY).slice(0,7); m.set(k,(m.get(k)||0)+p.s); });
+  return m;
+}
+/* Label periods are statement periods; the streams inside usually stem from earlier months. Find the run of months
+   (max. 12) whose Spotify-for-Artists streams match the statement's Spotify streams best across all titles. */
+function stUsageWindow(byTitle){
+  const series=[]; byTitle.forEach((q,t)=>{ const m=stAnalyticsMonthly(t); if(m&&q>0) series.push({t,q,m}); });
+  if(!series.length) return null;
+  const months=[...new Set(series.flatMap(x=>[...x.m.keys()]))].sort(); let best=null;
+  for(let i=0;i<months.length;i++) for(let j=i;j<Math.min(months.length,i+12);j++){
+    let score=0; const rows=series.map(x=>{ let a=0; for(let k=i;k<=j;k++) a+=x.m.get(months[k])||0; score+= a>0?Math.abs(Math.log(x.q/a)):5; return {t:x.t,q:x.q,a}; });
+    if(!best||score<best.score-1e-9) best={score, from:months[i], to:months[j], rows};
+  }
+  best.fit=best.rows.every(r=>r.a>0 && Math.abs(r.q/r.a-1)<=0.1);
+  return best;
+}
+function renderStRecon(){
+  const box=document.getElementById("stRecon"), sel=document.getElementById("stReconSel");
+  if(!stSets.find(s=>s.id===stRecon)) stRecon=stSets.length?stSets[stSets.length-1].id:"";
+  sel.innerHTML=stSets.map(s=>`<option value="${gEsc(s.id)}"${s.id===stRecon?" selected":""}>${gEsc(stName(s))}</option>`).join("");
+  const set=stSets.find(s=>s.id===stRecon); if(!set){ box.innerHTML=""; return; }
+  const rows=stRows(set), tot=rows.reduce((a,r)=>a+r.m.net,0), inc=rows.reduce((a,r)=>a+r.m.income,0);
+  const eur4=x=>(+x||0).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:4})+" €";
+  // 1) total check
+  let chk;
+  if(set.declaredTotal==null) chk=`<div class="rc-line"><span class="rc-badge warn">?</span><div><b>Summe aller Positionen: ${gMoney(tot)}</b><br><span>Die Datei enthält keine „Total“-Zeile — bitte mit dem Betrag auf dem PDF-Statement bzw. der Gutschrift vergleichen.</span></div></div>`;
+  else { const diff=tot-set.declaredTotal, ok=Math.abs(diff)<0.005;
+    chk=`<div class="rc-line"><span class="rc-badge ${ok?"ok":"bad"}">${ok?"✓":"!"}</span><div><b>Summe aller Positionen ${gMoney(tot)} ${ok?"=":"≠"} „Total“ laut Datei ${gMoney(set.declaredTotal)}</b><br><span>${ok?"Alle Einzelpositionen ergeben genau den abgerechneten Betrag.":"Differenz "+gMoney(diff)+" — Positionen fehlen oder die Datei wurde verändert."}</span></div></div>`; }
+  // 2) formula check
+  let fchk="";
+  if(rows.some(r=>r.raw.rate)){
+    let bad=0, worst=0; rows.forEach(r=>{ const e=r.raw.income*r.raw.share/100*r.raw.rate/100 - r.raw.net; if(Math.abs(e)>1e-6){ bad++; worst=Math.max(worst,Math.abs(e)); } });
+    fchk=`<div class="rc-line"><span class="rc-badge ${bad?"bad":"ok"}">${bad?"!":"✓"}</span><div><b>${bad?bad.toLocaleString("de-DE")+" von ":"Alle "}${rows.length.toLocaleString("de-DE")} Positionen ${bad?"weichen ab von":"folgen"} der Formel Netto = Income × Anteil × Royalty-Rate</b><br><span>${bad?"Größte Abweichung "+eur4(worst)+" — diese Zeilen in den Einzelpositionen prüfen.":"Jede Zeile ist rechnerisch nachvollziehbar."}</span></div></div>`;
+  }
+  // 3) waterfall per contract / release
+  const byC=new Map(); rows.forEach(r=>{ const k=r.release+"|"+r.raw.contract;
+    let c=byC.get(k); if(!c){ c={release:r.release, contract:r.raw.contract, rates:new Set(), shares:new Set(), income:0, net:0, n:0, streams:0}; byC.set(k,c); }
+    c.rates.add(r.raw.rate); c.shares.add(r.raw.share); c.income+=r.m.income; c.net+=r.m.net; c.n++; c.streams+=r.m.streams; });
+  const one=s=>s.size===1?sPct([...s][0]):"gemischt";
+  let wf=`<table class="mtable pv-table"><thead><tr><th>Release</th><th>Vertrag</th><th class="num">Income beim Label</th><th class="num">× Anteil</th><th class="num">× Royalty-Rate</th><th class="num">= Netto</th><th class="num">Streams</th><th class="num">Positionen</th></tr></thead><tbody>`;
+  [...byC.values()].sort((a,b)=>b.net-a.net).forEach(c=>{ wf+=`<tr><td>${gEsc(c.release)}</td><td>${gEsc(c.contract||"–")}</td><td class="num">${gMoney(c.income)}</td><td class="num">${one(c.shares)}</td><td class="num">${one(c.rates)}</td><td class="num tot">${gMoney(c.net)}</td><td class="num">${Math.round(c.streams).toLocaleString("de-DE")}</td><td class="num">${c.n.toLocaleString("de-DE")}</td></tr>`; });
+  wf+=`</tbody><tfoot><tr><td>Summe</td><td></td><td class="num">${gMoney(inc)}</td><td></td><td class="num">Ø ${inc?sPct(tot/inc*100):"–"}</td><td class="num">${gMoney(tot)}</td><td class="num">${Math.round(rows.reduce((a,r)=>a+r.m.streams,0)).toLocaleString("de-DE")}</td><td class="num">${rows.length.toLocaleString("de-DE")}</td></tr></tfoot></table>`;
+  // 4) by usage type
+  const byT=new Map(); rows.forEach(r=>{ let t=byT.get(r.type); if(!t){ t={qty:0,income:0,net:0,n:0}; byT.set(r.type,t); } t.qty+=r.m.qty; t.income+=r.m.income; t.net+=r.m.net; t.n++; });
+  let tt=`<table class="mtable pv-table"><thead><tr><th>Nutzungsart</th><th class="num">Menge</th><th class="num">Income</th><th class="num">Netto</th><th class="num">Anteil am Netto</th></tr></thead><tbody>`;
+  [...byT.entries()].sort((a,b)=>b[1].net-a[1].net).forEach(([k,t])=>{ const i=stTypeInfo(k);
+    tt+=`<tr><td${i?` title="${gEsc(i.text.replace(/<[^>]+>/g,""))}"`:""}>${gEsc(k)}${t.net<0?'<span class="sub g-down">Abzug</span>':""}</td><td class="num">${Math.round(t.qty).toLocaleString("de-DE")}</td><td class="num">${gMoney(t.income)}</td><td class="num${t.net<0?" g-down":""}">${gMoney(t.net)}</td><td class="num">${tot?sPct(t.net/tot*100):"–"}</td></tr>`; });
+  tt+=`</tbody></table>`;
+  // 5) cross-check against the Spotify-for-Artists data in the Analytics tab
+  const sp=new Map(); rows.forEach(r=>{ if(r.rgroup==="Spotify"&&r.m.streams) sp.set(r.title,(sp.get(r.title)||0)+r.m.streams); });
+  const W=stUsageWindow(sp); let xc;
+  if(W){
+    const span=W.from===W.to?sMonth(W.from):sMonth(W.from)+" – "+sMonth(W.to);
+    xc=`<div class="rc-line" style="padding:12px 14px"><span class="rc-badge ${W.fit?"ok":"warn"}">${W.fit?"✓":"?"}</span><div><b>${W.fit?"Die Spotify-Streams passen zum Nutzungszeitraum "+span:"Kein eindeutig passender Nutzungszeitraum — beste Annäherung "+span}</b><br><span>${W.fit?"Die Abrechnungsperiode ("+gEsc(stPeriods(set).join(", "))+") ist also nicht der Monat der Nutzung: Die Streams stammen aus diesem Zeitraum.":"Abweichungen über 10 % — evtl. fehlen Tagesdaten im Analytics-Tab oder das Label meldet andere Zeiträume."}</span></div></div>`;
+    xc+=`<table class="mtable pv-table"><thead><tr><th>Titel</th><th class="num">Spotify-Streams lt. Abrechnung</th><th class="num">lt. Analytics-Tab (${gEsc(span)})</th><th class="num">Verhältnis</th></tr></thead><tbody>`;
+    W.rows.sort((a,b)=>b.q-a.q).forEach(x=>{ const ratio=x.a?x.q/x.a*100:0;
+      xc+=`<tr><td>${gEsc(x.t)}</td><td class="num">${Math.round(x.q).toLocaleString("de-DE")}</td><td class="num">${Math.round(x.a).toLocaleString("de-DE")}</td><td class="num ${x.a&&Math.abs(ratio-100)<=10?"g-up":"g-down"}">${x.a?sPct(ratio):"–"}</td></tr>`; });
+    xc+=`</tbody></table><p class="rc-note">Der Zeitraum wird automatisch gesucht: die Monatsfolge (höchstens 12 Monate), deren Spotify-for-Artists-Streams am besten zu allen Titeln der Abrechnung passen. Kleine Abweichungen sind normal (Zählweise, Nachmeldungen).</p>`;
+  } else xc=`<p class="rc-note">Für die Titel dieser Abrechnung gibt es keine passenden Singles mit Tagesdaten im Analytics-Tab. Sind dort die Spotify-for-Artists-Daten geladen, erscheint hier ein Abgleich samt ermitteltem Nutzungszeitraum.</p>`;
+  box.innerHTML=`<div class="panel rc-box">${chk}${fchk}</div>
+    <h3 class="gl-sub">Vom Income zum Netto — je Release und Vertrag</h3><div class="panel tbl-wrap">${wf}</div>
+    <h3 class="gl-sub">Nach Nutzungsart</h3><div class="panel tbl-wrap">${tt}</div>
+    <h3 class="gl-sub">Abgleich mit Spotify for Artists</h3><div class="panel tbl-wrap">${xc}</div>`;
+}
+
+/* ---- raw rows ---- */
+function renderStRaw(rows){
+  const list=rows.slice().sort((a,b)=>Math.abs(b.m.net)-Math.abs(a.m.net)), shown=list.slice(0,stRawLimit);
+  const n4=x=>(+x||0).toLocaleString("de-DE",{minimumFractionDigits:4,maximumFractionDigits:4});
+  let h=`<thead><tr><th>Periode</th><th>Titel</th><th>ISRC</th><th>Plattform</th><th>Nutzungsart</th><th>Land</th><th class="num">Menge</th><th class="num">Income</th><th class="num">Anteil</th><th class="num">Rate</th><th class="num">Netto</th><th>Abrechnung</th></tr></thead><tbody>`;
+  shown.forEach(r=>{ h+=`<tr><td>${gEsc(r.period)}</td><td>${gEsc(r.title)}</td><td>${gEsc(r.isrc)}</td><td>${gEsc(r.retailer)}</td><td>${gEsc(r.type)}</td><td>${gEsc(r.land)}</td>`+
+    `<td class="num">${Math.round(r.m.qty).toLocaleString("de-DE")}</td><td class="num">${n4(r.m.income)}</td><td class="num">${sPct(r.raw.share)}</td><td class="num">${r.raw.rate?sPct(r.raw.rate):"–"}</td>`+
+    `<td class="num${r.m.net<0?" g-down":""}">${n4(r.m.net)}</td><td>${gEsc(stLabel("stmt",r.stmt))}</td></tr>`; });
+  if(!shown.length) h+=`<tr><td colspan="12" class="zero">Keine Positionen.</td></tr>`;
+  document.getElementById("stRaw").innerHTML=h+"</tbody>";
+  document.getElementById("stRawInfo").textContent=`${shown.length.toLocaleString("de-DE")} von ${list.length.toLocaleString("de-DE")} Positionen`;
+  document.getElementById("stRawMore").style.display=list.length>shown.length?"":"none";
+}
+
+/* ---- glossary ---- */
+const ST_FIELD_HELP=[
+  ["Period","Kennung der <b>Abrechnungsperiode</b> (z. B. 2026-01) — <b>nicht</b> der Monat, in dem gestreamt wurde. Der Abgleich mit Spotify for Artists zeigt, dass ein Statement Nutzungen aus mehreren früheren Monaten enthält; der Analyzer ermittelt diesen Zeitraum automatisch (Abschnitt „Statement nachvollziehen“)."],
+  ["Contract / Royalty_Rate_%","Der Vertrag mit dem Label und der darin vereinbarte <b>Royalty-Satz</b>: welcher Prozentsatz der Label-Einnahmen an euch geht. Er kann je Release unterschiedlich sein."],
+  ["Income_Price","Was beim Label bzw. Vertrieb für diese Position angekommen ist — nach dem Anteil, den die Plattform selbst behält. Das ist die Basis der Abrechnung."],
+  ["Share_%","Euer Anteil an der Aufnahme (Master). 100 % = die Einnahmen der Position gehören vollständig zu eurem Vertrag; bei Splits weniger."],
+  ["Net_Revenue","Euer Erlös: <b>Income × Share_% × Royalty_Rate_%</b>. Die Summe aller Zeilen ist der Betrag des Statements."],
+  ["Einbehalt Label","Im Analyzer berechnet: Income − Netto, also der Teil, der beim Label bleibt."],
+  ["Product_ID / EAN_UPC","Product_ID ist hier die <b>ISRC</b> der Aufnahme (eine pro Version, z. B. Original und Extended Mix); EAN/UPC identifiziert das Release."],
+  ["Retailer / Territory","Plattform und Land der Nutzung. Ländercodes nach ISO, dazu Sonderfälle wie UK (Vereinigtes Königreich) und WW (weltweit, ohne Länderzuordnung)."],
+  ["Quantity","Menge je Nutzungsart: Streams, Downloads oder Nutzungen in Videos. Für Vergleiche am besten nach Nutzungsart filtern oder den Wert <i>Streams</i> nehmen."],
+  ["Total-Zeile","Die Summenzeile am Ende der Datei. Der Analyzer liest sie mit und prüft, ob die Einzelpositionen exakt diesen Betrag ergeben."]
+];
+function renderStGlossary(){
+  const sums=new Map(); stSets.forEach(s=>stRows(s).forEach(r=>{ const k=r.type.toLowerCase(); sums.set(k,(sums.get(k)||0)+r.m.net); }));
+  document.getElementById("stGlossary").innerHTML=Object.keys(ST_TYPES).map(k=>{ const t=ST_TYPES[k], has=sums.has(k);
+    return `<div class="panel gl-card${has?" present":""}"><div class="gl-top"><span class="gl-code">${gEsc(t.name)}</span>${has?`<span class="gl-amt${sums.get(k)<0?" g-down":""}">${gMoney(sums.get(k))}</span>`:""}</div><p style="margin-top:8px">${t.text}</p></div>`; }).join("");
+  document.getElementById("stFields").innerHTML=ST_FIELD_HELP.map(([k,t])=>`<div><dt>${gEsc(k)}</dt><dd>${t}</dd></div>`).join("");
+}
+
+/* ---- statements list ---- */
+function renderStHint(){
+  const hint=document.getElementById("stHint"); if(!hint) return;
+  const n=stSets.reduce((a,s)=>a+s.raw.length,0);
+  hint.textContent = stPersist==="fail" ? "Speichern im Browser nicht möglich — bitte Backup nutzen." :
+    `Automatisch in der Browser-Datenbank gespeichert${stSets.length?` (${stSets.length} Abrechnung${stSets.length>1?"en":""}, ${n.toLocaleString("de-DE")} Positionen)`:""} — im Backup (Einstellungen → Data) enthalten.`;
+  hint.className="persist-hint"+(stPersist==="fail"?"":" ok");
+}
+function renderStList(){
+  const box=document.getElementById("stList");
+  box.innerHTML=stSets.map(s=>{ const off=stView.hidden.includes(s.id), tot=stSum(s,"net");
+    const ok=s.declaredTotal==null?null:Math.abs(tot-s.declaredTotal)<0.005;
+    return `<div class="inv-row st-row${off?" done":""}" data-id="${gEsc(s.id)}">
+      <div class="inv-meta"><div class="inv-label">${gEsc(stName(s))}</div>
+        <div class="inv-sub">${s.raw.length.toLocaleString("de-DE")} Positionen · ${gEsc(s.file)}</div></div>
+      <div class="inv-actions">
+        <input class="st-label" type="text" placeholder="Label eintragen" value="${gEsc(s.label)}" data-id="${gEsc(s.id)}" aria-label="Label">
+        <span class="st-amt">${gMoney(tot)}</span>
+        ${ok==null?"":`<span class="rc-badge ${ok?"ok":"bad"}" title="${ok?"Summe der Positionen = Total-Zeile der Datei":"Summe weicht von der Total-Zeile ab"}">${ok?"✓":"!"}</span>`}
+        <button class="btn mini" type="button" data-toggle="${gEsc(s.id)}">${off?"Einblenden":"Ausblenden"}</button>
+        <button class="del-x" type="button" data-del="${gEsc(s.id)}" title="Löschen">×</button>
+      </div></div>`; }).join("");
+  box.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>removeStSet(b.dataset.del));
+  box.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=()=>{ const id=b.dataset.toggle;
+    stView.hidden=stView.hidden.includes(id)?stView.hidden.filter(x=>x!==id):stView.hidden.concat(id); stSaveView(); renderStreams(); });
+  box.querySelectorAll(".st-label").forEach(inp=>inp.onchange=()=>{ const s=stSets.find(x=>x.id===inp.dataset.id); if(!s) return;
+    s.label=inp.value.trim(); s._rows=null; renderStreams(); stSave(); });
+  renderStHint();
+}
+
+/* ---- main render ---- */
+function renderStreams(){
+  if(!Array.isArray(stView.hidden)) stView.hidden=[];
+  stIsrcTitles=new Map(); stSets.forEach(s=>s.raw.forEach(r=>{ if(r.isrc&&!stIsrcTitles.has(r.isrc)) stIsrcTitles.set(r.isrc, r.track||r.title); }));
+  renderStList(); renderStGlossary();
+  const has=stSets.length>0;
+  document.getElementById("stEmpty").classList.toggle("hidden",has);
+  document.getElementById("stDash").style.display=has?"":"none";
+  if(!has){ if(stChart){ stChart.destroy(); stChart=null; } return; }
+  const rows=stPV.filtered();
+  renderStKpis(rows); renderStChart(rows); renderStRecon(); stPV.render(rows); renderStRaw(rows);
+}
+
+const stPV=makePivot({p:"sp", mount:"spMount", dims:ST_DIMS, measures:ST_MEASURES, presets:ST_PRESETS,
+  view:()=>stView, save:()=>stSaveView(), refresh:()=>renderStreams(), csvName:"label-pivot",
+  base:()=>{ const out=[]; stActive().forEach(s=>stRows(s).forEach(r=>out.push(r))); return out; },
+  label:stLabel, note:stNote, drill:["title","isrc","rgroup","retailer","land","type","period"]});
+
+(function(){
+  const dz=document.getElementById("stDrop"), fi=document.getElementById("stInput");
+  dz.onclick=e=>{ if(e.target.closest(".btn")) return; fi.click(); };
+  fi.onchange=()=>{ handleStreamFiles(fi.files); fi.value=""; };
+  ["dragenter","dragover"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add("drag");}));
+  ["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("drag");}));
+  dz.addEventListener("drop",e=>handleStreamFiles(e.dataTransfer.files));
+  document.getElementById("stClearBtn").onclick=clearStreams;
+  document.getElementById("stReconSel").onchange=e=>{ stRecon=e.target.value; renderStRecon(); };
+  document.getElementById("stRawMore").onclick=()=>{ stRawLimit+=100; renderStRaw(stPV.filtered()); };
+})();
+stLoad();
+
 
 /* ---- collapsible sections (fold state is a per-browser view preference, not part of the backup) ---- */
 const FOLD_KEY="singleAnalytics.folded";
