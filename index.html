@@ -324,6 +324,12 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 .iv-line .iv-desc{width:100%}
 .iv-line .rv-amt input{border:none; background:none; padding:9px 2px}
 .iv-meta{font-size:11.5px; color:var(--faint); margin-top:4px; text-transform:none; letter-spacing:0}
+.asg-carry{font-size:13.5px; padding:10px 12px; border:1px solid rgba(255,180,84,.4); background:rgba(255,180,84,.08); border-radius:9px}
+.asg-all{flex-direction:row !important; align-items:center; gap:8px !important; text-transform:none !important; letter-spacing:0 !important; font-size:12.5px !important; color:var(--muted) !important}
+.asg-row{flex-direction:row !important; align-items:flex-start; gap:10px !important; padding:10px 12px; border:1px solid var(--line); border-radius:9px; margin-bottom:8px; cursor:pointer; text-transform:none !important; letter-spacing:0 !important; font-size:13.5px !important; color:var(--text) !important}
+.asg-row:has(input:checked){border-color:var(--amber)}
+.asg-row input{accent-color:var(--amber); margin-top:3px}
+.asg-row small{color:var(--muted); font-size:12px}
 .man-note{margin:0; font-size:13px; color:var(--muted); line-height:1.5}
 .inv-form .ctrl{align-self:flex-start; text-transform:none}
 @media(max-width:640px){ .iv-line{grid-template-columns:22px 1fr 26px} .iv-line .rv-amt{grid-column:2} .if-grid{grid-template-columns:1fr} }
@@ -827,6 +833,25 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
       <div class="modal-foot">
         <button class="btn" id="ivCancel" type="button">Cancel</button>
         <button class="btn amber" id="ivDownload" type="button">Download PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="asgModal">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Assign carryover to an invoice</h3>
+        <button class="modal-x" id="asgClose" type="button">&times;</button>
+      </div>
+      <div class="modal-body inv-form">
+        <p class="man-note">Records which existing invoice already contains this carryover — for invoices issued earlier. Nothing is regenerated: the invoice and its PDF stay as they are. If the invoice is marked paid, the carryover counts as paid too.</p>
+        <div class="asg-carry" id="asgInfo"></div>
+        <label class="asg-all"><input type="checkbox" id="asgAll"> show all labels</label>
+        <div id="asgList"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="asgCancel" type="button">Cancel</button>
+        <button class="btn amber" id="asgSave" type="button">Assign</button>
       </div>
     </div>
   </div>
@@ -2282,10 +2307,43 @@ function setStatementStatus(id, status){
   if(status==="open" && s.carriedInto){ unlinkCarry(s); }
   renderInvoices();
 }
+/* ---- assign a carryover to an invoice after the fact: records the link only, no new PDF ---- */
+let asgCarryId=null;
+function openAssignCarry(id){
+  const c=statements.find(x=>x.id===id); if(!c) return; asgCarryId=id;
+  document.getElementById("asgAll").checked=false;
+  document.getElementById("asgInfo").innerHTML=`<b>${gEsc(c.label)}</b> · ${gEsc(stmtPeriod(c))}${c.stmtNo?" · Statement "+gEsc(c.stmtNo):""} · ${invMoney(c.payable||0,c.currency)}`;
+  renderAssignList(); document.getElementById("asgModal").classList.remove("hidden");
+}
+function renderAssignList(){
+  const c=statements.find(x=>x.id===asgCarryId); if(!c) return;
+  const all=document.getElementById("asgAll").checked, k=normKey(c.label);
+  const hosts=statements.filter(h=>h.id!==c.id && h.status!=="carry" && (all||normKey(h.label)===k)).sort((a,b)=>stmtSort(b)-stmtSort(a));
+  const box=document.getElementById("asgList");
+  box.innerHTML = hosts.length ? hosts.map((h,i)=>`<label class="asg-row"><input type="radio" name="asgHost" value="${gEsc(h.id)}" ${i===0?"checked":""}>
+      <span><b>${gEsc(h.label)}</b> · ${gEsc(stmtPeriod(h))}${h.stmtNo?" · Statement "+gEsc(h.stmtNo):""}<br>
+      <small>${h.invoice?"Invoice "+gEsc(h.invoice.no)+" · "+gEsc(h.invoice.date)+" · "+invMoney(h.invoice.total,h.currency):(h.payable!=null?invMoney(h.payable,h.currency):"")} · ${h.status==="paid"?"paid":"open"}</small></span></label>`).join("")
+    : `<div class="empty-state">No invoice of ${gEsc(c.label)} found.${all?"":" Tick “show all labels” if the label is spelled differently."}</div>`;
+  document.getElementById("asgSave").disabled=!hosts.length;
+}
+function closeAssignCarry(){ document.getElementById("asgModal").classList.add("hidden"); asgCarryId=null; }
+function saveAssignCarry(){
+  const c=statements.find(x=>x.id===asgCarryId), sel=document.querySelector('input[name="asgHost"]:checked');
+  if(!c||!sel) return; const h=statements.find(x=>x.id===sel.value); if(!h) return;
+  c.carriedInto=h.id; c.linkedOnly=true; if(h.status==="paid") c.status="paid";
+  closeAssignCarry(); renderInvoices();
+  toast("Carryover "+stmtPeriod(c)+" assigned to "+(h.invoice?"invoice "+h.invoice.no:h.label+" · "+stmtPeriod(h))+" — no new PDF created.",true);
+}
+function unassignCarry(id){
+  const c=statements.find(x=>x.id===id); if(!c||!c.carriedInto) return;
+  const h=statements.find(x=>x.id===c.carriedInto);
+  if(!confirm("Remove the assignment of carryover "+stmtPeriod(c)+" from "+(h?(h.invoice?"invoice "+h.invoice.no:stmtPeriod(h)):"its invoice")+"? It becomes an open carryover again.")) return;
+  unlinkCarry(c); c.status="carry"; renderInvoices(); toast("Assignment removed.",true);
+}
 function unlinkCarry(c){
   const host=statements.find(x=>x.id===c.carriedInto);
   if(host&&host.invoice) host.invoice.lines=host.invoice.lines.filter(l=>!(l.kind==="carry"&&l.stmtId===c.id));
-  c.carriedInto=null;
+  c.carriedInto=null; c.linkedOnly=false;
 }
 function removeStatement(id){
   const s=statements.find(x=>x.id===id); if(!s) return;
@@ -2294,7 +2352,7 @@ function removeStatement(id){
     (linked.length?"\n\n"+linked.length+" carryover(s) included in it become open carryovers again.":"")+
     (s.carriedInto?"\n\nIt is also removed from the invoice it was carried into.":"");
   if(!confirm(msg)) return;
-  linked.forEach(c=>{ c.carriedInto=null; if(c.status==="paid") c.status="carry"; });
+  linked.forEach(c=>{ c.carriedInto=null; c.linkedOnly=false; if(c.status==="paid") c.status="carry"; });
   if(s.carriedInto) unlinkCarry(s);
   statements=statements.filter(x=>x.id!==id); renderInvoices(); toast("Statement deleted.",true);
 }
@@ -2302,7 +2360,7 @@ function stmtPeriod(s){ return s.periodText || ((s.half||"")+" "+(s.year||"")).t
 function stmtSort(s){ return s.sort || ((+s.year||0)*100 + (s.half==="H1"?6:s.half==="H2"?12:0)); }
 function openCarries(s){   // carryovers of the same label that can go onto this statement's invoice
   const k=normKey(s.label);
-  return statements.filter(c=>c.id!==s.id && normKey(c.label)===k && (c.carriedInto===s.id || (c.status==="carry" && !c.carriedInto)))
+  return statements.filter(c=>c.id!==s.id && !c.linkedOnly && normKey(c.label)===k && (c.carriedInto===s.id || (c.status==="carry" && !c.carriedInto)))
                    .sort((a,b)=>stmtSort(a)-stmtSort(b));
 }
 
@@ -2368,7 +2426,9 @@ function renderInvoices(){
     const carries=st==="open"?openCarries(s).filter(c=>!c.carriedInto):[];
     const extra=[];
     if(s.invoice) extra.push(`Invoice ${gEsc(s.invoice.no)} · ${gEsc(s.invoice.date)} · ${invMoney(s.invoice.total,s.currency)}`);
-    if(host) extra.push(`Included in ${host.invoice?"invoice "+gEsc(host.invoice.no):"the invoice"} for ${gEsc(stmtPeriod(host))}`);
+    if(host) extra.push(`${s.linkedOnly?"Assigned to":"Included in"} ${host.invoice?"invoice "+gEsc(host.invoice.no):"the invoice"} for ${gEsc(stmtPeriod(host))}`);
+    const inc=statements.filter(c=>c.carriedInto===s.id);
+    if(inc.length) extra.push("Contains carryover "+inc.map(c=>gEsc(stmtPeriod(c))+" ("+invMoney(c.payable||0,c.currency)+")").join(", "));
     if(carries.length) extra.push(`<span class="inv-hint">${carries.length} open carryover${carries.length>1?"s":""} of this label (${invMoney(carries.reduce((a,c)=>a+(+c.payable||0),0),s.currency)}) can be added to the invoice</span>`);
     const meta=`<div class="inv-meta">
         <div class="inv-label">${gEsc(s.label)}${s.source==="manual"?'<span class="priv-tag">manual</span>':""}</div>
@@ -2377,9 +2437,12 @@ function renderInvoices(){
       </div>`;
     let actions;
     if(st==="paid")
-      actions=`<span class="inv-status paid">${CHECK_SVG} Paid</span>${s.invoice?`<button class="link-btn" data-inv="${s.id}" type="button">Invoice PDF</button>`:""}<button class="link-btn" data-reopen="${s.id}" type="button">Reopen</button>`;
+      actions=`<span class="inv-status paid">${CHECK_SVG} Paid</span>${s.linkedOnly&&host?`<button class="link-btn" data-unasg="${s.id}" type="button">Unassign</button>`:""}${s.invoice?`<button class="link-btn" data-inv="${s.id}" type="button">Invoice PDF</button>`:""}<button class="link-btn" data-reopen="${s.id}" type="button">Reopen</button>`;
     else if(st==="carry")
-      actions=`<span class="inv-status carry">${host?"Carryover · invoiced":"Carryover · open"}</span><button class="link-btn" data-reopen="${s.id}" type="button">Reopen</button>`;
+      actions=`<span class="inv-status carry">${host?"Carryover · invoiced":"Carryover · open"}</span>`+
+        (host ? (s.linkedOnly?`<button class="link-btn" data-unasg="${s.id}" type="button">Unassign</button>`:"")
+              : `<button class="btn mini" data-asg="${s.id}" type="button" title="Record which (already issued) invoice contains this carryover — no new PDF">Assign to invoice…</button>`)+
+        `<button class="link-btn" data-reopen="${s.id}" type="button">Reopen</button>`;
     else
       actions=`<button class="btn amber" data-inv="${s.id}" type="button">${s.invoice?"Edit invoice":"Create invoice"}</button>
         <button class="btn mini" data-paid="${s.id}" type="button">${CHECK_SVG} Mark paid</button>
@@ -2394,6 +2457,8 @@ function renderInvoices(){
   list.querySelectorAll("[data-reopen]").forEach(b=>b.onclick=()=>setStatementStatus(b.dataset.reopen,"open"));
   list.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openManualStatement(b.dataset.edit));
   list.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>removeStatement(b.dataset.del));
+  list.querySelectorAll("[data-asg]").forEach(b=>b.onclick=()=>openAssignCarry(b.dataset.asg));
+  list.querySelectorAll("[data-unasg]").forEach(b=>b.onclick=()=>unassignCarry(b.dataset.unasg));
   saveState();
 }
 
@@ -2583,6 +2648,11 @@ document.getElementById("ivDownload").onclick=downloadInvoice;
 document.getElementById("ivAddLine").onclick=addIvLine;
 document.getElementById("ivIntro").oninput=()=>{ ivIntroDirty=true; };
 document.getElementById("invManualBtn").onclick=()=>openManualStatement(null);
+document.getElementById("asgClose").onclick=closeAssignCarry;
+document.getElementById("asgCancel").onclick=closeAssignCarry;
+document.getElementById("asgSave").onclick=saveAssignCarry;
+document.getElementById("asgAll").onchange=renderAssignList;
+document.getElementById("asgModal").addEventListener("click",e=>{ if(e.target.id==="asgModal") closeAssignCarry(); });
 document.getElementById("manClose").onclick=closeManualStatement;
 document.getElementById("manCancel").onclick=closeManualStatement;
 document.getElementById("manSave").onclick=saveManualStatement;
