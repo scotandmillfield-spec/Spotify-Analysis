@@ -231,6 +231,12 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
 .inv-status{display:inline-flex; align-items:center; gap:6px; font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:13px; padding:7px 13px; border-radius:9px}
 .inv-status.paid{color:#52E0A0; background:rgba(82,224,160,.12); border:1px solid rgba(82,224,160,.4)}
 .inv-status.carry{color:#FFB454; background:rgba(255,180,84,.12); border:1px solid rgba(255,180,84,.4)}
+.inv-status.clarify{color:#FF6B8A; background:rgba(255,107,138,.12); border:1px solid rgba(255,107,138,.45); padding:3px 9px; font-size:12px; border-radius:7px; vertical-align:1px}
+.book-table tr.clarify td{background:rgba(255,107,138,.06)}
+.book-table tr.clarify td:first-child{box-shadow:inset 3px 0 0 #FF6B8A}
+.link-btn.clarify-btn:hover{color:#FF6B8A}
+.clarify-hint{font-size:12.5px; color:#FF6B8A; cursor:pointer}
+.clarify-hint:hover{text-decoration:underline}
 .inv-status .ic{width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round}
 .btn.mini{padding:8px 12px; font-size:12.5px; background:none}
 .btn.mini .ic{width:14px; height:14px; fill:none; stroke:#52E0A0; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; vertical-align:-2px; margin-right:5px}
@@ -616,7 +622,8 @@ footer{margin-top:38px; padding-top:22px; border-top:1px solid var(--line); colo
         <div class="book-tools">
           <label class="mini-field">Year <select id="bkYear"></select></label>
           <label class="mini-field">Month <select id="bkPeriod"></select></label>
-          <button class="btn mini" id="bkLock" type="button" title="Lock all open bookings of the selected year">Festschreiben</button>
+          <span class="clarify-hint" id="bkClarifyHint" role="button" tabindex="0"></span>
+          <button class="btn mini" id="bkLock" type="button" title="Lock all open bookings of the selected year (except those marked „Klären“)">Festschreiben</button>
         </div>
       </div>
       <div class="panel tbl-wrap"><table class="mtable book-table" id="journalTable"></table></div>
@@ -1275,7 +1282,7 @@ function rebuildFromState(state){
   assets = Array.isArray(state.assets) ? state.assets.map(a=>({...a})) : [];
   // normalise legacy bookings: ensure a locked flag and a running number
   let maxNo = Number(state.bookingSeq)||0;
-  bookings.forEach(b=>{ if(b.locked===undefined) b.locked=false; if(b.irrelevant===undefined) b.irrelevant=false; if(typeof b.no==="number") maxNo=Math.max(maxNo,b.no); });
+  bookings.forEach(b=>{ if(b.locked===undefined) b.locked=false; if(b.irrelevant===undefined) b.irrelevant=false; if(b.clarify===undefined) b.clarify=false; if(typeof b.no==="number") maxNo=Math.max(maxNo,b.no); });
   bookings.forEach(b=>{ if(typeof b.no!=="number") b.no=++maxNo; });
   bookingSeq = maxNo;
   editId = null;
@@ -1778,11 +1785,15 @@ function stornoBooking(id){
 }
 function festschreiben(){   // locks the open bookings of the selected journal year only
   const year=document.getElementById("bkYear").value;
-  const open=bookings.filter(b=>!b.locked && yearOf(b.date)===year);
-  if(!open.length){ toast("Nothing to lock — all bookings of "+year+" are already locked."); return; }
-  if(!confirm("Lock all "+open.length+" open booking(s) of "+year+"? Locked bookings can no longer be edited or deleted — only reversed by a Storno.")) return;
+  const unlocked=bookings.filter(b=>!b.locked && yearOf(b.date)===year);
+  const held=unlocked.filter(b=>b.clarify), open=unlocked.filter(b=>!b.clarify);   // "Klären" bookings stay open
+  if(!open.length){ toast(held.length ? "Nothing to lock — the "+held.length+" remaining booking(s) of "+year+" are marked „Klären“. Clarify them first."
+                                      : "Nothing to lock — all bookings of "+year+" are already locked."); return; }
+  if(!confirm("Lock "+open.length+" open booking(s) of "+year+"? Locked bookings can no longer be edited or deleted — only reversed by a Storno."+
+    (held.length?"\n\n"+held.length+" booking(s) marked „Klären“ are NOT locked and stay editable until clarified.":""))) return;
   if(editId && open.some(b=>b.id===editId)) cancelEdit();
-  open.forEach(b=>{ b.locked=true; }); renderBooks(); toast(open.length+" booking(s) of "+year+" locked.",true);
+  open.forEach(b=>{ b.locked=true; }); renderBooks();
+  toast(open.length+" booking(s) of "+year+" locked."+(held.length?" "+held.length+" „Klären“ booking(s) left open.":""),true);
 }
 
 function yearOf(d){ return (d||"").slice(0,4); }
@@ -1797,6 +1808,7 @@ function showBookYear(date){   // switch the journal to the year of a (new/edite
 }
 
 /* ---- the Books tab ---- */
+let bkOnlyClarify=false;   // journal filter: only bookings marked „Klären“
 function renderBooks(){
   // account selects for the entry form
   const soll=document.getElementById("bkSoll"), haben=document.getElementById("bkHaben");
@@ -1822,7 +1834,11 @@ function renderBooks(){
   const endKey   = period==="all" ? year+"-12" : period;
   const uptoEnd  = bookings.filter(b=>periodOf(b.date)<=endKey);
   const prevY    = String(+year-1);
-  renderJournal(inPeriod);                                   // journal shows everything (incl. private)
+  const nClar=inYear.filter(b=>b.clarify&&!b.locked).length, ch=document.getElementById("bkClarifyHint");
+  if(!nClar) bkOnlyClarify=false;
+  renderJournal(bkOnlyClarify ? inYear.filter(b=>b.clarify&&!b.locked) : inPeriod);   // journal shows everything (incl. private)
+  if(ch){ ch.textContent = !nClar ? "" : bkOnlyClarify ? "Alle Buchungen anzeigen" : nClar+" × Klären — wird nicht festgeschrieben";
+    ch.title = nClar ? (bkOnlyClarify ? "Show all bookings again" : "Show only the bookings marked „Klären“") : ""; }
   renderBWA(year, inYear.filter(b=>!b.irrelevant),           // BWA ignores private/irrelevant bookings
             prevY, bookings.filter(b=>yearOf(b.date)===prevY && !b.irrelevant));
   renderSalden(uptoEnd.filter(b=>!b.irrelevant));           // balances ignore them too
@@ -1836,17 +1852,17 @@ function renderJournal(list){
   let sumS=0; list.forEach(b=>sumS+=+b.amount);
   const LOCK='<svg class="lock-ic" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0110 0v3"/><rect x="5" y="10" width="14" height="10" rx="2"/></svg>';
   t.innerHTML="<thead><tr><th class='jno'>No.</th><th>Date</th><th>Doc</th><th>Text</th><th>Debit · Soll</th><th>Credit · Haben</th><th class='num'>Amount</th><th></th></tr></thead><tbody>"+
-    (rows.length? rows.map(b=>`<tr class="${b.locked?"locked":""}${b.source==="storno"?" storno":""}${b.irrelevant?" irrelevant":""}">
+    (rows.length? rows.map(b=>`<tr class="${b.locked?"locked":""}${b.source==="storno"?" storno":""}${b.irrelevant?" irrelevant":""}${b.clarify&&!b.locked?" clarify":""}">
         <td class="jno">${b.no!=null?b.no:""}</td>
         <td>${(b.date||"").split("-").reverse().join(".")}</td>
         <td class="acct-tag">${b.beleg||(b.source==="fyrst"?"bank":b.source==="storno"?"storno":"")}</td>
-        <td>${b.text||""}${b.irrelevant?' <span class="priv-tag">private</span>':""}</td>
+        <td>${b.text||""}${b.irrelevant?' <span class="priv-tag">private</span>':""}${b.clarify&&!b.locked?' <span class="inv-status clarify" title="Beleg im Umlauf — Betrag/Kontierung noch zu klären. Wird beim Festschreiben übersprungen.">Klären</span>':""}</td>
         <td class="jkonto"><span class="acct-tag">${b.soll}</span> ${acc(b.soll)?acc(b.soll).name:""}</td>
         <td class="jkonto"><span class="acct-tag">${b.haben}</span> ${acc(b.haben)?acc(b.haben).name:""}</td>
         <td class="num">${deMoney(b.amount)}</td>
         <td class="jact">${ b.locked
             ? `${LOCK}<button class="link-btn" data-storno="${b.id}" title="Reverse with Storno">Storno</button>`
-            : `<button class="link-btn" data-irr="${b.id}" title="${b.irrelevant?"Count in BWA & balances again":"Exclude from BWA & balances (private)"}">${b.irrelevant?"Mark business":"Mark private"}</button><button class="link-btn" data-editbk="${b.id}">Edit</button><button class="del-x" data-delbk="${b.id}" title="Delete">&times;</button>` }</td></tr>`).join("")
+            : `<button class="link-btn${b.clarify?"":" clarify-btn"}" data-clar="${b.id}" title="${b.clarify?"Mark as clarified — can be locked again":"Mark „Klären“: document still in circulation, amount/accounts to be clarified — cannot be locked"}">${b.clarify?"Geklärt":"Klären"}</button><button class="link-btn" data-irr="${b.id}" title="${b.irrelevant?"Count in BWA & balances again":"Exclude from BWA & balances (private)"}">${b.irrelevant?"Mark business":"Mark private"}</button><button class="link-btn" data-editbk="${b.id}">Edit</button><button class="del-x" data-delbk="${b.id}" title="Delete">&times;</button>` }</td></tr>`).join("")
       : `<tr><td colspan="8" style="color:var(--faint); padding:18px 12px">No bookings in this period.</td></tr>`)+
     (rows.length?`<tr class="row-sum"><td colspan="6">Total (Soll = Haben)</td><td class="num">${deMoney(sumS)}</td><td></td></tr>`:"")+
     "</tbody>";
@@ -1854,6 +1870,12 @@ function renderJournal(list){
   t.querySelectorAll("[data-editbk]").forEach(b=>b.onclick=()=>editBooking(b.dataset.editbk));
   t.querySelectorAll("[data-storno]").forEach(b=>b.onclick=()=>stornoBooking(b.dataset.storno));
   t.querySelectorAll("[data-irr]").forEach(b=>b.onclick=()=>toggleIrrelevant(b.dataset.irr));
+  t.querySelectorAll("[data-clar]").forEach(b=>b.onclick=()=>toggleClarify(b.dataset.clar));
+}
+function toggleClarify(id){
+  const b=bookings.find(x=>x.id===id); if(!b||b.locked) return;
+  b.clarify=!b.clarify; renderBooks();
+  toast(b.clarify?"Booking #"+b.no+" marked „Klären“ — it stays open when locking.":"Booking #"+b.no+" clarified — it can be locked now.",true);
 }
 function toggleIrrelevant(id){
   const b=bookings.find(x=>x.id===id); if(!b||b.locked) return;
@@ -1935,7 +1957,10 @@ function saldenData(list){
 }
 function generateTaxPDF(year){
   if(!window.jspdf||!window.jspdf.jsPDF){ toast("PDF engine not loaded — check your connection.",false); return; }
-  const yr=String(year); const { jsPDF }=window.jspdf; const doc=new jsPDF({unit:"mm",format:"a4"});
+  const yr=String(year);
+  const nClar=bookings.filter(b=>b.clarify&&!b.locked&&(b.date||"").slice(0,4)===yr).length;
+  if(nClar && !confirm(nClar+" booking(s) of "+yr+" are still marked „Klären“. Their amounts or accounts may change. Export the PDF anyway?")) return;
+  const { jsPDF }=window.jspdf; const doc=new jsPDF({unit:"mm",format:"a4"});
   const L=20, R=190, money=deMoney;
   const inYear  = bookings.filter(b=> !b.irrelevant && (b.date||"").slice(0,4)===yr);
   const uptoEnd = bookings.filter(b=> !b.irrelevant && (b.date||"") <= (yr+"-12-31"));
@@ -2569,6 +2594,8 @@ document.getElementById("invModal").addEventListener("click",e=>{ if(e.target.id
 document.getElementById("bkAdd").onclick=saveBooking;
 document.getElementById("bkCancel").onclick=cancelEdit;
 document.getElementById("bkLock").onclick=festschreiben;
+(()=>{ const ch=document.getElementById("bkClarifyHint"); const go=()=>{ bkOnlyClarify=!bkOnlyClarify; renderBooks(); };
+  ch.onclick=go; ch.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } }; })();
 document.getElementById("bkPeriod").onchange=renderBooks;
 document.getElementById("bkYear").onchange=()=>{ document.getElementById("bkPeriod").value="all"; renderBooks(); };
 document.getElementById("kaAdd").onclick=addAccount;
