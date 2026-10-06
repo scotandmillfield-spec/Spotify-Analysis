@@ -27,7 +27,7 @@ h1{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(30px
 h1 em{font-style:normal; color:var(--amber)}
 .lede{color:var(--muted); margin:0; max-width:60ch}
 
-.tiles{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
+.tiles{display:grid; grid-template-columns:repeat(2,1fr); gap:18px}
 @media(max-width:860px){ .tiles{grid-template-columns:1fr} }
 .tile{position:relative; display:flex; flex-direction:column; gap:12px; padding:26px 24px 22px; min-height:250px;
   background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); color:inherit; text-decoration:none; overflow:hidden;
@@ -56,7 +56,7 @@ footer{margin-top:44px; padding-top:20px; border-top:1px solid var(--line); colo
   <header>
     <div class="eyebrow">Persönliches Cockpit</div>
     <h1>Übersicht</h1>
-    <p class="lede">Ein Einstieg für das Music-Business, die privaten Finanzen und die Steuer.</p>
+    <p class="lede">Ein Einstieg für Music-Business, Consulting, private Finanzen und Steuer.</p>
   </header>
 
   <main class="tiles">
@@ -66,6 +66,14 @@ footer{margin-top:44px; padding-top:20px; border-top:1px solid var(--line); colo
       <h2>Lyall &amp; Drozdzynski GbR</h2>
       <p>Streaming-Analytics, Royalties, GEMA, Label-Reports, Rechnungen, Anlagen und Journal / BWA.</p>
       <div class="foot"><span class="stat" id="gbrStat"></span><span class="go">Öffnen →</span></div>
+    </a>
+
+    <a class="tile" href="consulting-invoices.html" style="--accent:#A78BFA">
+      <div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+      <div class="kicker">Consulting</div>
+      <h2>Advisory Ledger</h2>
+      <p>Projekte und Stundensätze, Zeiterfassung, Monatsrechnungen und Rechnungsregister.</p>
+      <div class="foot"><span class="stat" id="conStat"></span><span class="go">Öffnen →</span></div>
     </a>
 
     <div class="tile soon" style="--accent:#52E0A0" aria-disabled="true">
@@ -99,6 +107,13 @@ footer{margin-top:44px; padding-top:20px; border-top:1px solid var(--line); colo
     if(clarify) parts.push(`<span class="warn"><b>${clarify}</b> × Klären</span>`);
   }
   document.getElementById("gbrStat").innerHTML=parts.join(" · ");
+  // consulting: logged hours and amount of the current month
+  let con=null; try{ con=JSON.parse(localStorage.getItem("consultingInvoicesV1")||"null"); }catch(e){}
+  if(con&&Array.isArray(con.entries)){
+    const m=new Date().toISOString().slice(0,7), rate={}; (con.projects||[]).forEach(p=>rate[p.id]=+p.hourlyRate||0);
+    let h=0, eur=0; con.entries.filter(e=>(e.date||"").slice(0,7)===m).forEach(e=>{ if(e.kind==="flat") eur+=+e.amount||0; else { h+=+e.hours||0; eur+=(+e.hours||0)*(rate[e.projectId]||0); } });
+    if(h||eur) document.getElementById("conStat").innerHTML=`Dieser Monat: <b>${h.toLocaleString("de-DE",{maximumFractionDigits:2})} h</b> · <b>${eur.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})} €</b>`;
+  }
   document.getElementById("foot").textContent=new Date().toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
 })();
 </script>
